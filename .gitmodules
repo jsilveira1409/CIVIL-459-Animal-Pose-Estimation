@@ -1,0 +1,3 @@
+[submodule "animal-pose-dataset"]
+	path = animal-pose-dataset
+	url = git@github.com:noahcao/animal-pose-dataset.git

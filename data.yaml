@@ -1,0 +1,8 @@
+path: ..\CIVIL-459-Animal-Pose-Estimation\Dataset\
+
+val:   'images\train\'
+train: 'images\train\'
+test:  'images\test\'
+
+nc: 5 
+names: ["dog", "cat", "sheep", "horse", "cow"]

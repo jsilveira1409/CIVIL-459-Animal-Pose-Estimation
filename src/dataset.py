@@ -1,21 +1,5 @@
-import torch
-import os
-import torch
-import pandas as pd
-import numpy as np
-from skimage import io, transform
-import matplotlib.pyplot as plt
-from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms.functional as F
-
-
-from torchvision import transforms, utils
-from  Dataset.visualize_keypoint import *
-import warnings
-warnings.filterwarnings("ignore")
-
 # cow sheep horse cat dog
-labels = ['dog', 'cat', 'sheep', 'horse', 'cow']
+labels = {'dog':1, 'cat':2, 'sheep':3, 'horse':4, 'cow':5} 
 
 class AnimalPoseDataset(Dataset):
     def __init__ (self, json_file, root_dir, transform=None):
@@ -36,12 +20,11 @@ class AnimalPoseDataset(Dataset):
         annotations = anno_dict["annotations"]
 
         imagename = image_map[str(annotations[idx]["image_id"])]
-        bbox = annotations[idx]["bbox"]
+        bbox = torch.tensor(annotations[idx]["bbox"])
         keypoints = annotations[idx]["keypoints"]
-        label = labels[annotations[idx]["category_id"]-1]
+        label = annotations[idx]["category_id"] 
         image_path = os.path.join(self.root_dir, imagename)
-        image = cv2.imread(image_path).astype(np.float32)
-        # transpose the image
+        image = cv2.imread(image_path)
         sample = {'image_id': img_id, 'image': image, 'keypoints': keypoints, 'bbox':bbox, 'label':label}
         
         if self.transform:
@@ -91,15 +74,17 @@ class Rescale (object):
             new_x = int(kp[0] * new_w / w)
             new_y = int(kp[1] * new_h / h)
             scaled_keypoints.append([new_x, new_y, kp[2]])
+        # convert to tensor
+        scaled_keypoints = torch.tensor(scaled_keypoints)
         # scale the bbox
         xmin, ymin, xmax, ymax = bbox
         xmin = int(xmin * new_w / w)
         xmax = int(xmax * new_w / w)
         ymin = int(ymin * new_h / h)
         ymax = int(ymax * new_h / h)
-        bbox = [xmin, ymin, xmax, ymax]
+        # convert to tensor
+        bbox = torch.tensor([xmin, ymin, xmax, ymax])
         
-
         return {'image_id':img_id, 'image': img, 'keypoints': scaled_keypoints, 'bbox':bbox, 'label':sample['label']}
         
 class SDA(object):
@@ -111,15 +96,15 @@ class SDA(object):
         self.tolerance=tolerance
 
     def __call__(self, sample):
-        img_id, image, keypoints, bbox = sample['image_id'], sample['image'], sample['keypoints'], sample['bbox']
+        img_id, image, keypoints, bbox, label = sample['image_id'], sample['image'], sample['keypoints'], sample['bbox'], sample['label']
         image, keypoints, bodyparts = self.crop_bodypart(image, keypoints)
         self.bodypart_pool.extend(bodyparts)
         
         # add the body parts to the image
         for i in range(self.nb_bodyparts):
             image = self.add_bodyparts(image)
-            
-        return {'image_id':img_id, 'image': image, 'keypoints': keypoints, 'bbox':bbox, 'label':sample['label']}
+        
+        return {'image_id':img_id, 'image': image, 'keypoints': keypoints, 'bbox':bbox, 'label':label}
 
     def crop_bodypart(self, image, keypoints):
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
@@ -136,6 +121,9 @@ class SDA(object):
     
     def add_bodyparts(self, image):        
         # randomly select a body part
+        # check if the body part pool is empty
+        if len(self.bodypart_pool) == 0:
+            return image
         bodypart = random.choice(self.bodypart_pool)
         # randomly select an angle
         #angle = random.randint(0, 360)        
@@ -155,3 +143,4 @@ class SDA(object):
         for i in range(len(self.bodypart_pool)):
             plt.imshow(self.bodypart_pool[i])
             plt.show()
+#TODO: adapt SDA so it has a limited body part pool, if else it will consume too much memory

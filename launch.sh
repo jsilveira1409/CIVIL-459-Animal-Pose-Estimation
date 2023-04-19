@@ -10,5 +10,5 @@
 #SBATCH --account civil-459
 #SBATCH --reservation civil-459
 
-source venv/bin/activate
+source venvs/jsilveira-venv/bin/activate
 python3 main.py

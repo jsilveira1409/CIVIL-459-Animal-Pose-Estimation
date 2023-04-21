@@ -1,3 +1,18 @@
+import json
+from torch.utils.data import Dataset
+import torch
+import os
+import numpy as np
+import cv2
+from visualize_keypoints import *
+from skimage import io, transform
+import random
+import matplotlib.pyplot as plt
+from torchvision import transforms, utils
+import torchvision.transforms.functional as F
+from torch.utils.data import Dataset, DataLoader
+
+
 # cow sheep horse cat dog
 labels = {'dog':1, 'cat':2, 'sheep':3, 'horse':4, 'cow':5} 
 
@@ -35,8 +50,9 @@ class AnimalPoseDataset(Dataset):
     def draw(self, sample):
         image = sample['image']
         bbox = sample['bbox']
-        xmin, ymin, xmax, ymax = bbox 
-        image = draw_bbox(image, xmin, ymin, xmax, ymax, random_color())
+        print(bbox.shape)
+        #xmin, ymin, xmax, ymax = bbox 
+        #image = draw_bbox(image, xmin, ymin, xmax, ymax, random_color())
         image = draw_keypoint(image, sample['keypoints'])
         return image
 
@@ -144,3 +160,34 @@ class SDA(object):
             plt.imshow(self.bodypart_pool[i])
             plt.show()
 #TODO: adapt SDA so it has a limited body part pool, if else it will consume too much memory
+
+
+
+dataset = AnimalPoseDataset(json_file='../Dataset/keypoints.json', 
+                            root_dir='../Dataset/images/',
+                            transform=transforms.Compose([Rescale((640,640))]))
+                                                        
+dataloader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=0)
+sample = {'image_id':None, 'image': None, 'keypoints': None, 'bbox':None, 'label':None}
+
+
+for i_batch, sample_batched in enumerate(dataloader):
+    if i_batch == 3:
+        sample['image_id'] = sample_batched['image_id']
+        sample['image'] = sample_batched['image']
+        sample['keypoints'] = sample_batched['keypoints']
+        sample['bbox'] = sample_batched['bbox']
+        sample['label'] = sample_batched['label']
+        break
+
+# show image
+plt.figure()
+#convert bgr to rgb
+plt.imshow(sample['image'][0])
+plt.show()
+
+# show keypoints
+img = dataset.draw(sample)
+plt.figure()
+plt.imshow()
+plt.show()

@@ -5,3 +5,5 @@ featuremaps/
 Output/
 model.pt
 _archive/
+data-animalpose/
+outputs/

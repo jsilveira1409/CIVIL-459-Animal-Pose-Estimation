@@ -17,7 +17,7 @@ from .constants import ANIMAL_KEYPOINTS, ANIMAL_SKELETON, HFLIP, \
 
 class AnimalPoseEstimation (DataModule):
     debug = False
-    pin_memory = True
+    pin_memory = False
 
     n_images = None
     square_edge = 513

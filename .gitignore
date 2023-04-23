@@ -7,3 +7,4 @@ model.pt
 _archive/
 data-animalpose/
 outputs/
+plugins/

@@ -1,23 +1,33 @@
-import json
-import torch
 import argparse
-from torch.utils.data import Dataset
-from torchvision.transforms import ToTensor, Resize, Compose
+import torch
+
+try:
+    from pycocotools.coco import COCO
+except ImportError:
+    COCO = None
 
 from openpifpaf.datasets import DataModule
 from openpifpaf import encoder, headmeta, metric, transforms
 from openpifpaf.datasets import collate_images_anns_meta, collate_images_targets_meta
-
-from PIL import Image
+from openpifpaf.plugins.coco import CocoDataset as CocoLoader
 
 from .constants import ANIMAL_KEYPOINTS, ANIMAL_SKELETON, HFLIP, \
     ANIMAL_SIGMAS, ANIMAL_POSE, ANIMAL_CATEGORIES, ANIMAL_SCORE_WEIGHTS
 
 
-
-class AnimalPoseEstimation (DataModule):
+class AnimalPoseEstimation(DataModule):
+    """
+    Adapted from the standard CocoKp class to work as external plugin
+    """
     debug = False
-    pin_memory = True
+    pin_memory = False
+
+    train_annotations = 'data-animalpose/keypoints.json'
+    val_annotations = 'data-animalpose/keypoints.json'
+    eval_annotations = val_annotations
+    train_image_dir = 'data-animalpose/images'
+    val_image_dir = 'data-animalpose/images'
+    eval_image_dir = val_image_dir
 
     n_images = None
     square_edge = 513
@@ -35,15 +45,8 @@ class AnimalPoseEstimation (DataModule):
     eval_orientation_invariant = 0.0
     eval_extended_scale = False
 
-
-    def __init__(self,image_dir='data-animalpose/images', annotation_file='data-animalpose/keypoints.json', preprocess=None):
+    def __init__(self):
         super().__init__()
-        # load json file
-        #self.annotation = json.load(open(annotation_file))
-        self.annotation_file = annotation_file
-        self.annotation = json.load(open(annotation_file))
-        self.image_dir = image_dir
-        self.preprocess = preprocess
 
         cif = headmeta.Cif('cif', 'custom-animal',
                            keypoints=ANIMAL_KEYPOINTS,
@@ -62,16 +65,85 @@ class AnimalPoseEstimation (DataModule):
         self.head_metas = [cif, caf]
 
     @classmethod
-    def cli(cls, parser:argparse.ArgumentParser):
+    def cli(cls, parser: argparse.ArgumentParser):
         group = parser.add_argument_group('AnimalPoseEstimation')
         group.add_argument('--animalpose-image-dir', default='data-animalpose/images')
         group.add_argument('--animalpose-annotation-file', default='data-animalpose/keypoints.json')
-    
-    # TODO check
+##        group = parser.add_argument_group('data module Animal')
+
+        #group.add_argument('--custom-animal-train-annotations',
+        #                   default=cls.train_annotations)
+        #group.add_argument('--custom-animal-val-annotations',
+        #                   default=cls.val_annotations)
+        #group.add_argument('--custom-animal-train-image-dir',
+        #                   default=cls.train_image_dir)
+        #group.add_argument('--custom-animal-val-image-dir',
+        #                   default=cls.val_image_dir)
+#
+#        group.add_argument('--custom-animal-square-edge',
+#                           default=cls.square_edge, type=int,
+#                           help='square edge of input images')
+#        assert not cls.extended_scale
+#        group.add_argument('--custom-animal-extended-scale',
+#                           default=False, action='store_true',
+#                           help='augment with an extended scale range')
+#        group.add_argument('--custom-animal-orientation-invariant',
+#                           default=cls.orientation_invariant, type=float,
+#                           help='augment with random orientations')
+#        group.add_argument('--custom-animal-blur',
+#                           default=cls.blur, type=float,
+#                           help='augment with blur')
+#        assert cls.augmentation
+#        group.add_argument('--custom-animal-no-augmentation',
+#                           dest='animal_augmentation',
+#                           default=True, action='store_false',
+#                           help='do not apply data augmentation')
+#        group.add_argument('--custom-animal-rescale-images',
+#                           default=cls.rescale_images, type=float,
+#                           help='overall rescale factor for images')
+#        group.add_argument('--custom-animal-upsample',
+#                           default=cls.upsample_stride, type=int,
+#                           help='head upsample stride')
+#        group.add_argument('--custom-animal-min-kp-anns',
+#                           default=cls.min_kp_anns, type=int,
+#                           help='filter images with fewer keypoint annotations')
+#        group.add_argument('--custom-animal-bmin',
+#                           default=cls.b_min, type=int,
+#                           help='b minimum in pixels')
+#
     @classmethod
-    def configure(cls, args):
-        return cls(args.animalpose_image_dir, args.animalpose_annotation_file)
-    
+    def configure(cls, args: argparse.Namespace):
+        # extract global information
+        cls.debug = args.debug
+        cls.pin_memory = args.pin_memory
+
+        # Animal specific
+        #cls.train_annotations = args.animal_train_annotations
+        #cls.val_annotations = args.animal_val_annotations
+        #cls.train_image_dir = args.animal_train_image_dir
+        #cls.val_image_dir = args.animal_val_image_dir
+
+        cls.square_edge = args.animal_square_edge
+        cls.extended_scale = args.animal_extended_scale
+        cls.orientation_invariant = args.animal_orientation_invariant
+        cls.blur = args.animal_blur
+        cls.augmentation = args.animal_augmentation  # loaded by the dest name
+        cls.rescale_images = args.animal_rescale_images
+        cls.upsample_stride = args.animal_upsample
+        cls.min_kp_anns = args.animal_min_kp_anns
+        cls.b_min = args.animal_bmin
+
+        # evaluation
+        cls.eval_annotation_filter = args.animal_eval_annotation_filter
+        cls.eval_long_edge = args.animal_eval_long_edge
+        cls.eval_orientation_invariant = args.animal_eval_orientation_invariant
+        cls.eval_extended_scale = args.animal_eval_extended_scale
+
+        if (args.animal_eval_test2017 or args.animal_eval_testdev2017) \
+                and not args.write_predictions \
+                and not args.debug:
+            raise Exception('have to use --write-predictions for this dataset')
+
     def _preprocess(self):
         encoders = (encoder.Cif(self.head_metas[0], bmin=self.b_min),
                     encoder.Caf(self.head_metas[1], bmin=self.b_min))
@@ -88,12 +160,12 @@ class AnimalPoseEstimation (DataModule):
         if self.extended_scale:
             rescale_t = transforms.RescaleRelative(
                 scale_range=(0.2 * self.rescale_images,
-                                2.5 * self.rescale_images),
+                             2.5 * self.rescale_images),
                 power_law=True, stretch_range=(0.75, 1.33))
         else:
             rescale_t = transforms.RescaleRelative(
                 scale_range=(0.3 * self.rescale_images,
-                                2.0 * self.rescale_images),
+                             2.0 * self.rescale_images),
                 power_law=True, stretch_range=(0.75, 1.33))
 
         return transforms.Compose([
@@ -105,7 +177,7 @@ class AnimalPoseEstimation (DataModule):
                 transforms.Blur(), self.blur),
             transforms.RandomChoice(
                 [transforms.RotateBy90(),
-                    transforms.RotateUniform(30.0)],
+                 transforms.RotateUniform(30.0)],
                 [self.orientation_invariant, 0.4],
             ),
             transforms.Crop(self.square_edge, use_area_of_interest=True),
@@ -115,52 +187,33 @@ class AnimalPoseEstimation (DataModule):
         ])
 
     def train_loader(self):
-        # Return the training data loader
-        train_dataset = AnimalPoseEstimation(image_dir=self.image_dir, annotation_file=self.annotation_file, preprocess = self._preprocess())
-        return torch.utils.data.DataLoader(
-            train_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.loader_workers,
-            pin_memory=self.pin_memory,
-            collate_fn=collate_images_targets_meta,
+        train_data = CocoLoader(
+            image_dir=self.train_image_dir,
+            ann_file=self.train_annotations,
+            preprocess=self._preprocess(),
+            annotation_filter=True,
+            min_kp_anns=self.min_kp_anns,
+            category_ids=[1],
         )
+        return torch.utils.data.DataLoader(
+            train_data, batch_size=self.batch_size, shuffle=not self.debug,
+            pin_memory=self.pin_memory, num_workers=self.loader_workers, drop_last=True,
+            collate_fn=collate_images_targets_meta)
 
     def val_loader(self):
-        # Return the training data loader
-        val_dataset = AnimalPoseEstimation(image_dir=self.image_dir, annotation_file=self.annotation_file, preprocess=self._preprocess())
-        return torch.utils.data.DataLoader(
-            val_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.loader_workers,
-            pin_memory=self.pin_memory,
-            collate_fn=collate_images_targets_meta,
+        val_data = CocoLoader(
+            image_dir=self.val_image_dir,
+            ann_file=self.val_annotations,
+            preprocess=self._preprocess(),
+            annotation_filter=True,
+            min_kp_anns=self.min_kp_anns,
+            category_ids=[1],
         )
-        
+        return torch.utils.data.DataLoader(
+            val_data, batch_size=self.batch_size, shuffle=False,
+            pin_memory=self.pin_memory, num_workers=self.loader_workers, drop_last=True,
+            collate_fn=collate_images_targets_meta)
 
-    def image_file(self, index):
-        # Return the file path of the image with the given index
-        img_id = self.annotation['annotations'][index]['image_id']
-        img = self.annotation['images'][str(img_id)]
-        return '{}/{}'.format(self.image_dir, img)
-       
-
-    def anns(self, index):
-        # Return the annotations for the image with the given index
-        instances = [ann for ann in self.annotation['annotations'] if ann['image_id'] == index]
-        ann = []
-
-        for instance in instances:  
-            # Return the annotations for the image with the given index
-            image_id = instance['image_id']
-            category_id = instance['category_id']
-            keypoints = instance['keypoints']
-            #bbox = self.annotation['annotations'][index]['bbox']
-            ann.append({'image_id': image_id, 'category_id': category_id, 'keypoints': keypoints})
-    
-        return ann
-    
     @classmethod
     def common_eval_preprocess(cls):
         rescale_t = None
@@ -233,30 +286,3 @@ class AnimalPoseEstimation (DataModule):
             iou_type='keypoints',
             keypoint_oks_sigmas=ANIMAL_SIGMAS,
         )]
-
-    def meta(self, index):
-        # Return metadata for the image with the given index
-        meta = {
-            'file_name': self.image_file(index),
-            # Add any other metadata you need here
-        }
-        return meta
-
-    def __len__(self):
-        # Return the number of images in the dataset
-        return len(self.annotation['images'])
-    
-    def __getitem__(self, index):
-        # Return the image and annotations for the image with the given index
-        image = Image.open(self.image_file(index)).convert('RGB')
-        anns = self.anns(index)
-        meta = self.meta(index)
-
-        if self.preprocess is not None:
-            image, anns, meta = self.preprocess(image, anns, meta)
-
-        return image, anns, meta
-        
-    
-
-

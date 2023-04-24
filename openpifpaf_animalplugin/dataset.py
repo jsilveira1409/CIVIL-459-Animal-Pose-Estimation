@@ -19,7 +19,7 @@ class AnimalPoseEstimation(DataModule):
     """
     Adapted from the standard CocoKp class to work as external plugin
     """
-    debug = False
+    debug = True
     pin_memory = False
 
     train_annotations = 'data-animalpose/keypoints.json'
@@ -40,7 +40,7 @@ class AnimalPoseEstimation(DataModule):
     min_kp_anns = 1
     b_min = 1  # 1 pixel
 
-    eval_annotation_filter = True
+    eval_annotation_filter = False
     eval_long_edge = 0  # set to zero to deactivate rescaling
     eval_orientation_invariant = 0.0
     eval_extended_scale = False
@@ -67,52 +67,55 @@ class AnimalPoseEstimation(DataModule):
     @classmethod
     def cli(cls, parser: argparse.ArgumentParser):
         group = parser.add_argument_group('AnimalPoseEstimation')
-        group.add_argument('--animalpose-image-dir', default='data-animalpose/images')
-        group.add_argument('--animalpose-annotation-file', default='data-animalpose/keypoints.json')
-##        group = parser.add_argument_group('data module Animal')
+        group.add_argument('--custom-animal-image-dir', default='data-animalpose/images')
+        group.add_argument('--custom-animal-annotation-file', default='data-animalpose/keypoints.json')
+        group = parser.add_argument_group('AnimalPoseEstimation')
 
         #group.add_argument('--custom-animal-train-annotations',
-        #                   default=cls.train_annotations)
+        #                   #default=cls.train_annotations)
+        #                    default = 'data-animalpose/keypoints.json')
         #group.add_argument('--custom-animal-val-annotations',
-        #                   default=cls.val_annotations)
+        #                   #default=cls.val_annotations)
+        #                    default='data-animalpose/keypoints.json')
         #group.add_argument('--custom-animal-train-image-dir',
-        #                   default=cls.train_image_dir)
+        #                   default='data-animalpose/images')
         #group.add_argument('--custom-animal-val-image-dir',
-        #                   default=cls.val_image_dir)
+        #                   default='data-animalpose/images')
 #
-#        group.add_argument('--custom-animal-square-edge',
-#                           default=cls.square_edge, type=int,
-#                           help='square edge of input images')
-#        assert not cls.extended_scale
-#        group.add_argument('--custom-animal-extended-scale',
-#                           default=False, action='store_true',
-#                           help='augment with an extended scale range')
-#        group.add_argument('--custom-animal-orientation-invariant',
-#                           default=cls.orientation_invariant, type=float,
-#                           help='augment with random orientations')
-#        group.add_argument('--custom-animal-blur',
-#                           default=cls.blur, type=float,
-#                           help='augment with blur')
-#        assert cls.augmentation
-#        group.add_argument('--custom-animal-no-augmentation',
-#                           dest='animal_augmentation',
-#                           default=True, action='store_false',
-#                           help='do not apply data augmentation')
-#        group.add_argument('--custom-animal-rescale-images',
-#                           default=cls.rescale_images, type=float,
-#                           help='overall rescale factor for images')
-#        group.add_argument('--custom-animal-upsample',
-#                           default=cls.upsample_stride, type=int,
-#                           help='head upsample stride')
-#        group.add_argument('--custom-animal-min-kp-anns',
-#                           default=cls.min_kp_anns, type=int,
-#                           help='filter images with fewer keypoint annotations')
-#        group.add_argument('--custom-animal-bmin',
-#                           default=cls.b_min, type=int,
-#                           help='b minimum in pixels')
-#
+        #group.add_argument('--custom-animal-square-edge',
+        #                   default=cls.square_edge, type=int,
+        #                   help='square edge of input images')
+        #assert not cls.extended_scale
+        group.add_argument('--custom-animal-extended-scale',
+                           default=False, action='store_true',
+                           help='augment with an extended scale range')
+        group.add_argument('--custom-animal-orientation-invariant',
+                           default=cls.orientation_invariant, type=float,
+                           help='augment with random orientations')
+        group.add_argument('--custom-animal-blur',
+                           default=cls.blur, type=float,
+                           help='augment with blur')
+        assert cls.augmentation
+        group.add_argument('--custom-animal-no-augmentation',
+                           dest='animal_augmentation',
+                           default=True, action='store_false',
+                           help='do not apply data augmentation')
+        group.add_argument('--custom-animal-rescale-images',
+                           default=cls.rescale_images, type=float,
+                           help='overall rescale factor for images')
+        group.add_argument('--custom-animal-upsample',
+                           default=cls.upsample_stride, type=int,
+                           help='head upsample stride')
+        group.add_argument('--custom-animal-min-kp-anns',
+                           default=cls.min_kp_anns, type=int,
+                           help='filter images with fewer keypoint annotations')
+        group.add_argument('--custom-animal-bmin',
+                           default=cls.b_min, type=int,
+                           help='b minimum in pixels')
+
     @classmethod
     def configure(cls, args: argparse.Namespace):
+        global train_annotations, val_annotations, train_image_dir, val_image_dir
         # extract global information
         cls.debug = args.debug
         cls.pin_memory = args.pin_memory
@@ -123,6 +126,11 @@ class AnimalPoseEstimation(DataModule):
         #cls.train_image_dir = args.animal_train_image_dir
         #cls.val_image_dir = args.animal_val_image_dir
 
+        cls.train_annotations = 'data-animalpose/keypoints.json'
+        cls.val_annotations = 'data-animalpose/keypoints.json'
+        cls.train_image_dir = 'data-animalpose/images'
+        cls.val_image_dir = 'data-animalpose/images'
+#
         cls.square_edge = args.animal_square_edge
         cls.extended_scale = args.animal_extended_scale
         cls.orientation_invariant = args.animal_orientation_invariant
@@ -191,9 +199,9 @@ class AnimalPoseEstimation(DataModule):
             image_dir=self.train_image_dir,
             ann_file=self.train_annotations,
             preprocess=self._preprocess(),
-            annotation_filter=True,
-            min_kp_anns=self.min_kp_anns,
-            category_ids=[1],
+            annotation_filter=False,
+            #min_kp_anns=self.min_kp_anns,
+            #category_ids=[1],
         )
         return torch.utils.data.DataLoader(
             train_data, batch_size=self.batch_size, shuffle=not self.debug,
@@ -205,9 +213,9 @@ class AnimalPoseEstimation(DataModule):
             image_dir=self.val_image_dir,
             ann_file=self.val_annotations,
             preprocess=self._preprocess(),
-            annotation_filter=True,
-            min_kp_anns=self.min_kp_anns,
-            category_ids=[1],
+            annotation_filter=False,
+            #min_kp_anns=self.min_kp_anns,
+            #category_ids=[1],
         )
         return torch.utils.data.DataLoader(
             val_data, batch_size=self.batch_size, shuffle=False,

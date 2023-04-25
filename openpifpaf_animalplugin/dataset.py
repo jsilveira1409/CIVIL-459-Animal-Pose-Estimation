@@ -294,3 +294,5 @@ class AnimalPoseEstimation(DataModule):
             iou_type='keypoints',
             keypoint_oks_sigmas=ANIMAL_SIGMAS,
         )]
+    
+    

@@ -1,6 +1,6 @@
 import subprocess
 
-cmd = "!python3 -m openpifpaf.train \
+cmd = "python3 -m openpifpaf.train \
     --dataset custom_animal \
     --basenet=shufflenetv2k30 \
     --lr=0.00005 \

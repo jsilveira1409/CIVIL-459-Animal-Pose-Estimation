@@ -22,11 +22,11 @@ class AnimalPoseEstimation(DataModule):
     debug = True
     pin_memory = False
 
-    train_annotations = 'data-animalpose/keypoints.json'
-    val_annotations = 'data-animalpose/keypoints.json'
+    train_annotations = '../data-animalpose/keypoints.json'
+    val_annotations = '../data-animalpose/keypoints.json'
     eval_annotations = val_annotations
-    train_image_dir = 'data-animalpose/images'
-    val_image_dir = 'data-animalpose/images'
+    train_image_dir = '../data-animalpose/images'
+    val_image_dir = '../data-animalpose/images'
     eval_image_dir = val_image_dir
 
     n_images = None
@@ -34,7 +34,7 @@ class AnimalPoseEstimation(DataModule):
     extended_scale = False
     orientation_invariant = 0.0
     blur = 0.0
-    augmentation = True
+    augmentation = False
     rescale_images = 1.0
     upsample_stride = 1
     min_kp_anns = 1
@@ -54,7 +54,7 @@ class AnimalPoseEstimation(DataModule):
                            pose=ANIMAL_POSE,
                            draw_skeleton=ANIMAL_SKELETON,
                            score_weights=ANIMAL_SCORE_WEIGHTS)
-        caf = headmeta.Caf('caf', 'custom-animal',
+        caf = headmeta.Caf('caf','custom-animal',
                            keypoints=ANIMAL_KEYPOINTS,
                            sigmas=ANIMAL_SIGMAS,
                            pose=ANIMAL_POSE,
@@ -67,25 +67,25 @@ class AnimalPoseEstimation(DataModule):
     @classmethod
     def cli(cls, parser: argparse.ArgumentParser):
         group = parser.add_argument_group('AnimalPoseEstimation')
-        group.add_argument('--custom-animal-image-dir', default='data-animalpose/images')
-        group.add_argument('--custom-animal-annotation-file', default='data-animalpose/keypoints.json')
+        group.add_argument('--custom-animal-image-dir', default='../data-animalpose/images')
+        group.add_argument('--custom-animal-annotation-file', default='../data-animalpose/keypoints.json')
         group = parser.add_argument_group('AnimalPoseEstimation')
 
-        #group.add_argument('--custom-animal-train-annotations',
-        #                   #default=cls.train_annotations)
-        #                    default = 'data-animalpose/keypoints.json')
-        #group.add_argument('--custom-animal-val-annotations',
-        #                   #default=cls.val_annotations)
-        #                    default='data-animalpose/keypoints.json')
-        #group.add_argument('--custom-animal-train-image-dir',
-        #                   default='data-animalpose/images')
-        #group.add_argument('--custom-animal-val-image-dir',
-        #                   default='data-animalpose/images')
-#
-        #group.add_argument('--custom-animal-square-edge',
-        #                   default=cls.square_edge, type=int,
-        #                   help='square edge of input images')
-        #assert not cls.extended_scale
+        group.add_argument('--custom-animal-train-annotations',
+                           #default=cls.train_annotations)
+                            default = 'data-animalpose/keypoints.json')
+        group.add_argument('--custom-animal-val-annotations',
+                           #default=cls.val_annotations)
+                            default='data-animalpose/keypoints.json')
+        group.add_argument('--custom-animal-train-image-dir',
+                           default='data-animalpose/images')
+        group.add_argument('--custom-animal-val-image-dir',
+                           default='data-animalpose/images')
+
+        group.add_argument('--custom-animal-square-edge',
+                           default=cls.square_edge, type=int,
+                           help='square edge of input images')
+        assert not cls.extended_scale
         group.add_argument('--custom-animal-extended-scale',
                            default=False, action='store_true',
                            help='augment with an extended scale range')
@@ -126,10 +126,10 @@ class AnimalPoseEstimation(DataModule):
         #cls.train_image_dir = args.animal_train_image_dir
         #cls.val_image_dir = args.animal_val_image_dir
 
-        cls.train_annotations = 'data-animalpose/keypoints.json'
-        cls.val_annotations = 'data-animalpose/keypoints.json'
-        cls.train_image_dir = 'data-animalpose/images'
-        cls.val_image_dir = 'data-animalpose/images'
+        cls.train_annotations = '../data-animalpose/keypoints.json'
+        cls.val_annotations = '../data-animalpose/keypoints.json'
+        cls.train_image_dir = '../data-animalpose/images'
+        cls.val_image_dir = '../data-animalpose/images'
 #
         cls.square_edge = args.animal_square_edge
         cls.extended_scale = args.animal_extended_scale
@@ -157,6 +157,7 @@ class AnimalPoseEstimation(DataModule):
                     encoder.Caf(self.head_metas[1], bmin=self.b_min))
 
         if not self.augmentation:
+            print("flag")
             return transforms.Compose([
                 transforms.NormalizeAnnotations(),
                 transforms.RescaleAbsolute(self.square_edge),
@@ -164,7 +165,6 @@ class AnimalPoseEstimation(DataModule):
                 transforms.EVAL_TRANSFORM,
                 transforms.Encoders(encoders),
             ])
-
         if self.extended_scale:
             rescale_t = transforms.RescaleRelative(
                 scale_range=(0.2 * self.rescale_images,
@@ -205,7 +205,7 @@ class AnimalPoseEstimation(DataModule):
         )
         return torch.utils.data.DataLoader(
             train_data, batch_size=self.batch_size, shuffle=not self.debug,
-            pin_memory=self.pin_memory, num_workers=self.loader_workers, drop_last=True,
+            pin_memory=self.pin_memory, num_workers=1, drop_last=True,
             collate_fn=collate_images_targets_meta)
 
     def val_loader(self):
@@ -214,7 +214,7 @@ class AnimalPoseEstimation(DataModule):
             ann_file=self.val_annotations,
             preprocess=self._preprocess(),
             annotation_filter=False,
-            #min_kp_anns=self.min_kp_anns,
+#            min_kp_anns=self.min_kp_anns,
             #category_ids=[1],
         )
         return torch.utils.data.DataLoader(
@@ -295,4 +295,33 @@ class AnimalPoseEstimation(DataModule):
             keypoint_oks_sigmas=ANIMAL_SIGMAS,
         )]
     
+import matplotlib.pyplot as plt
+import numpy as np
+
+from multiprocessing import freeze_support
+
+def main():
+    dataset = AnimalPoseEstimation()
+    dataloader = dataset.train_loader()
+    # print keypoint of first image
+    print(dataloader.dataset[0][1][0]['keypoints'])
     
+
+    #batch = next(iter(dataloader))
+    #batch_image = batch[0][0]
+    #batch_anns = batch[1][0]
+    #batch_meta = batch[2][0]
+
+
+    # Assuming batch_image is a numpy array with float values
+    #image = batch_image.numpy().transpose(1, 2, 0)
+    # Normalize the input data to the range [0..1]
+    #normalized_image = (image - np.min(image)) / (np.max(image) - np.min(image))
+    # Show the image with matplotlib
+    #plt.imshow(normalized_image)    # Your main code goes here
+
+if __name__ == '__main__':
+    freeze_support()
+    main()
+
+

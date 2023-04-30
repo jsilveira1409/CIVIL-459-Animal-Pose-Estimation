@@ -8,18 +8,23 @@ class SDA(Compose):
         self.output_dir = output_dir
         super().__init__([])
 
-    def __call__(self, image, annotation, *, image_info=None):
-        image, annotation = super().__call__(image, annotation, image_info=image_info)
+    def __call__(self, data):
+        # crop bodypart images from keypoint location
+        keypoints = data['keypoints']
+        for i in range(len(keypoints)):
+            if keypoints[i][2] > 0.5:
+                bodypart = data['keypoint_names'][i]
+                if bodypart not in self.bodypart_pool:
+                    self.bodypart_pool.append(bodypart)
+                x = int(keypoints[i][0])
+                y = int(keypoints[i][1])
+                image = data['image']
+                crop = image.crop((x-50, y-50, x+50, y+50))
+                crop.save(os.path.join(self.output_dir, bodypart + '.jpg'))
+        return data
     
-        # save the body parts to the image
-        for ann in annotation:
-            for i, bbox in enumerate(ann.data):
-                body_part_image = image.crop(bbox)
-                filename = f"{ann.id}_part_{i}.jpg"
-                body_part_image.save(os.path.join(self.output_dir, filename))
+        
 
-        return image, annotation
-    
     @staticmethod
     def cli(parser: ArgumentParser):
         parser.add_argument('--sda-option', type=str, default='default_value')

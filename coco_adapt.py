@@ -15,13 +15,6 @@ eval_image_dir = val_image_dir
 keypoint_file = 'data-animalpose/keypoints.json'
 images_folder = 'data-animalpose/images/'
 
-#def convert_keypoints_format(keypoints_list):
-#    keypoints_flat = []
-#    for keypoint in keypoints_list:
-#        keypoints_flat.extend(keypoint)
-#    return keypoints_flat
-
-
 def download_dataset():
     cmd = 'rm -rf data-animalpose'
     subprocess.call(cmd, shell=True)
@@ -41,6 +34,7 @@ def convert_keypoints_format(keypoints_list):
     for keypoint in keypoints_list:
         keypoints_flat.extend([float(k) for k in keypoint])
     return keypoints_flat
+
 def adapt_to_coco():
     # Load the input JSON file
     with open(keypoint_file, 'r') as f:
@@ -52,7 +46,7 @@ def adapt_to_coco():
     # Update images list format
     images_list = []
     for image_id, image_filename in input_dict['images'].items():
-        images_list.append({'id': int(image_id), 'file_name': image_filename})
+        images_list.append({'id': int(image_id), image_id: image_filename})
     output_dict['images'] = images_list
 
     # Update annotations keypoints format and add missing fields

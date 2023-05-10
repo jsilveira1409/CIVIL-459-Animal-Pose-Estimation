@@ -2,8 +2,8 @@ import openpifpaf
 from openpifpaf_sdaplugin import SDA
 import numpy as np
 
-from openpifpaf.plugins.animalpose import AnimalKp
-#from openpifpaf_animalplugin import AnimalPoseEstimation
+#from openpifpaf.plugins.animalpose import AnimalKp
+from openpifpaf_animalpose2.animal_kp_custom import AnimalKpCustom
 import matplotlib.pyplot as plt
 import torch
 import torch.utils.data
@@ -51,16 +51,15 @@ def test_sda (sda):
 
 def main():
     config = openpifpaf.plugin.register()
-    dataset = AnimalKp()
+    print(openpifpaf.DATAMODULES)
+    dataset = AnimalKpCustom()
     sda = SDA(train_img='data-animalpose/images/train/', 
               val_img='data-animalpose/images/val/', 
               train_ann='data-animalpose/annotations/animal_keypoints_20_train.json',
               val_ann='data-animalpose/annotations/animal_keypoints_20_val.json')
+    
     test_sda(sda)
-
     
-    
-
     pass
 
 from multiprocessing import freeze_support

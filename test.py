@@ -1,6 +1,6 @@
-
 import openpifpaf
 from openpifpaf_sdaplugin import SDA
+import numpy as np
 
 from openpifpaf.plugins.animalpose import AnimalKp
 #from openpifpaf_animalplugin import AnimalPoseEstimation
@@ -42,8 +42,12 @@ args = argparse.Namespace(
     animal_eval_testdev2017=False
 )
 
-
-
+def test_sda (sda):
+    img = Image.open('data-animalpose/images/train/2007_001397.jpg')
+    tensor_img = np.array(img)
+    img1 = sda.apply(tensor_img)
+    plt.imshow(tensor_img)
+    plt.show()
 
 def main():
     config = openpifpaf.plugin.register()
@@ -52,23 +56,10 @@ def main():
               val_img='data-animalpose/images/val/', 
               train_ann='data-animalpose/annotations/animal_keypoints_20_train.json',
               val_ann='data-animalpose/annotations/animal_keypoints_20_val.json')
+    test_sda(sda)
+
     
-
-    #arg = argparse.ArgumentParser()
-    #dataset.cli(arg)
-    #a = arg.parse_args()
-    #dataset.configure(a)
-    #dataloader = dataset.train_loader()
-    #sample = next(iter(dataloader))
-    #image_batch, anns_batch, meta_batch = sample
-    ## show image with matplotlib
-    #image = image_batch[0].numpy().transpose((2, 1, 0))
-    #image = numpy.clip(image, 0, 1)
-    #plt.imshow(image)
-    #plt.show()
-
-    # send dataset to SDA to create a bodypart database
-    sda.crop_dataset()
+    
 
     pass
 
@@ -77,13 +68,6 @@ from multiprocessing import freeze_support
 if __name__ == '__main__':
     freeze_support()
     main()
-
-
-
-
-
-
-
 
 
 

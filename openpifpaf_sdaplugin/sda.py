@@ -63,7 +63,7 @@ def draw_keypoint(image, keypoints):
     return im
 
 class SDA(transforms.Preprocess):
-    def __init__(self, train_img, train_ann, val_ann, val_img, probability=0.5, tolerance=5):
+    def __init__(self, train_img, train_ann, val_ann, val_img, probability=0.5, tolerance=5, file = 'output/cropped_bodyparts.txt'):
         super().__init__()
         self.probability = probability
         self.tolerance = tolerance
@@ -71,22 +71,41 @@ class SDA(transforms.Preprocess):
         self.val_img = val_img
         self.train_ann = train_ann
         self.val_ann = val_ann
-        self.bodyparts_pool = []
+        self.bodyparts_file = file 
+        # read txt file with the body parts as a list
+        with open(self.bodyparts_file) as file:
+            self.bodyparts_pool = json.load(file)
+        print("number of body parts: ",len(self.bodyparts_pool) )
 
-
-    def apply(self, image, anns=None, meta=None):
+    def apply(self, image):
         # Implement the SDA logic here
         # 1. Check if the augmentation should be applied based on the probability
-        if random.random() > self.probability:
-            return image, anns, meta
+        #if random.random() > self.probability:
+        #    return image, anns, meta
 
         # 2. Perform the augmentation:
         #   - choose random number of body parts to add to the image
         #   - choose random body parts from the pool of body parts
         #   - add them to the image
+        
+        nb_bodyparts = random.randint(1, 5)
+        print("nb_bodyparts added ",nb_bodyparts)
+        # load the body parts pool
+        for i in range(nb_bodyparts):
+            # choose a random body part from the pool
+            bodypart = random.choice(self.bodyparts_pool)
+            # load the body part
+            bodypart = plt.imread(bodypart)
+            # choose a random position to add the body part
+            x = random.randint(0, image.shape[1] - bodypart.shape[1])
+            y = random.randint(0, image.shape[0] - bodypart.shape[0])
+            # rotate image ? 
+
+            # add the body part to the image
+            image[y : y+bodypart.shape[0], x : x+bodypart.shape[1]] = bodypart
 
         # 3. Return the augmented image, anns, and meta
-        return image, anns, meta
+        return image
    
     def crop(self,image, keypoints):
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
@@ -242,3 +261,4 @@ if __name__ == '__main__':
               val_ann='../data-animalpose/annotations/animal_keypoints_20_val.json')
     
     sda.test_instance(10)
+    sda.crop_dataset()

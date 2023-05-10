@@ -8,6 +8,8 @@ import numpy as np
 import os
 import cv2
 import torch
+from PIL import Image
+
 
 
 # cow sheep horse cat dog
@@ -63,7 +65,12 @@ def draw_keypoint(image, keypoints):
     return im
 
 class SDA(transforms.Preprocess):
-    def __init__(self, train_img, train_ann, val_ann, val_img, probability=0.5, tolerance=5, file = 'output/cropped_bodyparts.txt'):
+    def __init__(self, 
+                 train_img = 'data-animalpose/images/train/', 
+                 train_ann = 'data-animalpose/images/val/', 
+                 val_ann = 'data-animalpose/annotations/animal_keypoints_20_train.json', 
+                 val_img = 'data-animalpose/annotations/animal_keypoints_20_val.json', 
+                 probability=0.5, tolerance=5, file = 'output/cropped_bodyparts.txt'):
         super().__init__()
         self.probability = probability
         self.tolerance = tolerance
@@ -75,7 +82,7 @@ class SDA(transforms.Preprocess):
         # read txt file with the body parts as a list
         with open(self.bodyparts_file) as file:
             self.bodyparts_pool = json.load(file)
-        print("number of body parts: ",len(self.bodyparts_pool) )
+        #print("number of body parts: ",len(self.bodyparts_pool) )
 
     def apply(self, image):
         # Implement the SDA logic here
@@ -88,23 +95,32 @@ class SDA(transforms.Preprocess):
         #   - choose random body parts from the pool of body parts
         #   - add them to the image
         
-        nb_bodyparts = random.randint(1, 5)
+        nb_bodyparts = random.randint(1, 3)
         print("nb_bodyparts added ",nb_bodyparts)
-        # load the body parts pool
+        image = np.asarray(image, dtype=np.uint8)
+        # get the image dimensions
+        image_height, image_width = image.shape[:2]
         for i in range(nb_bodyparts):
             # choose a random body part from the pool
             bodypart = random.choice(self.bodyparts_pool)
             # load the body part
             bodypart = plt.imread(bodypart)
+            # get the body part dimensions
+            bodypart_height, bodypart_width = bodypart.shape[:2]
+            
             # choose a random position to add the body part
-            x = random.randint(0, image.shape[1] - bodypart.shape[1])
-            y = random.randint(0, image.shape[0] - bodypart.shape[0])
-            # rotate image ? 
-
+            x = random.randint(0, image_width - bodypart_width)
+            y = random.randint(0, image_height - bodypart_height)
+            # TODO:rotate image ? 
             # add the body part to the image
-            image[y : y+bodypart.shape[0], x : x+bodypart.shape[1]] = bodypart
+            #image[y : y+bodypart.shape[0], x : x+bodypart.shape[1]] = bodypart
 
-        # 3. Return the augmented image, anns, and meta
+            image[y : y+bodypart_height, x : x+bodypart_width] = bodypart
+
+        # 3. Return the augmented image
+            #transform to pil image
+        image = Image.fromarray(image)
+
         return image
    
     def crop(self,image, keypoints):
@@ -160,10 +176,15 @@ class SDA(transforms.Preprocess):
         return mask, keypoints, bodyparts
 
     def __call__(self, image, anns=None, meta=None):
-        return self.apply(image, anns, meta)
+        img = self.apply(image)
+        return img, anns, meta
     
     @classmethod
     def configure(cls, args: argparse.Namespace):
+        pass
+
+    @classmethod
+    def cli(cls, parser: argparse.ArgumentParser):
         pass
 
     def test_instance(self, image_id):

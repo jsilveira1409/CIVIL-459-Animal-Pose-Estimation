@@ -20,7 +20,7 @@ from openpifpaf.datasets import DataModule
 from openpifpaf import encoder, headmeta, metric, transforms
 from openpifpaf.datasets import collate_images_anns_meta, collate_images_targets_meta
 from openpifpaf.plugins.coco import CocoDataset as CocoLoader
-
+from openpifpaf_sdaplugin import SDA
 from .constants import ANIMAL_KEYPOINTS, ANIMAL_SKELETON, HFLIP, \
     ANIMAL_SIGMAS, ANIMAL_POSE, ANIMAL_CATEGORIES, ANIMAL_SCORE_WEIGHTS
 
@@ -73,6 +73,8 @@ class AnimalKpCustom(DataModule):
 
         cif.upsample_stride = self.upsample_stride
         cif.base_stride = 4
+        
+        # NOTE:ADDED THIS LINES
         caf.upsample_stride = self.upsample_stride
         caf.base_stride = 4
         self.head_metas = [cif, caf]
@@ -82,62 +84,62 @@ class AnimalKpCustom(DataModule):
         
         group = parser.add_argument_group('data module Animal')
 
-        group.add_argument('--debug', default=False, action='store_true')
-        group.add_argument('--pin-memory', default=False, action='store_true')
-        group.add_argument('--animal-train-annotations',
+        #group.add_argument('--debug', default=False, action='store_true')
+        #group.add_argument('--pin-memory', default=False, action='store_true')
+        group.add_argument('--custom-animal-train-annotations',
                            default=cls.train_annotations)
-        group.add_argument('--animal-val-annotations',
+        group.add_argument('--custom-animal-val-annotations',
                            default=cls.val_annotations)
-        group.add_argument('--animal-train-image-dir',
+        group.add_argument('--custom-animal-train-image-dir',
                            default=cls.train_image_dir)
-        group.add_argument('--animal-val-image-dir',
+        group.add_argument('--custom-animal-val-image-dir',
                            default=cls.val_image_dir)
 
-        group.add_argument('--animal-square-edge',
+        group.add_argument('--custom-animal-square-edge',
                            default=cls.square_edge, type=int,
                            help='square edge of input images')
         assert not cls.extended_scale
-        group.add_argument('--animal-extended-scale',
+        group.add_argument('--custom-animal-extended-scale',
                            default=False, action='store_true',
                            help='augment with an extended scale range')
-        group.add_argument('--animal-orientation-invariant',
+        group.add_argument('--custom-animal-orientation-invariant',
                            default=cls.orientation_invariant, type=float,
                            help='augment with random orientations')
-        group.add_argument('--animal-blur',
+        group.add_argument('--custom-animal-blur',
                            default=cls.blur, type=float,
                            help='augment with blur')
         assert cls.augmentation
-        group.add_argument('--animal-no-augmentation',
+        group.add_argument('--custom-animal-no-augmentation',
                            dest='animal_augmentation',
                            default=True, action='store_false',
                            help='do not apply data augmentation')
-        group.add_argument('--animal-rescale-images',
+        group.add_argument('--custom-animal-rescale-images',
                            default=cls.rescale_images, type=float,
                            help='overall rescale factor for images')
-        group.add_argument('--animal-upsample',
+        group.add_argument('--custom-animal-upsample',
                            default=cls.upsample_stride, type=int,
                            help='head upsample stride')
-        group.add_argument('--animal-min-kp-anns',
+        group.add_argument('--custom-animal-min-kp-anns',
                            default=cls.min_kp_anns, type=int,
                            help='filter images with fewer keypoint annotations')
-        group.add_argument('--animal-bmin',
+        group.add_argument('--custom-animal-bmin',
                            default=cls.b_min, type=int,
                            help='b minimum in pixels')
 
         # evaluation  (TO setup directly)
         eval_set_group = group.add_mutually_exclusive_group()
-        eval_set_group.add_argument('--animal-eval-test2017', default=False, action='store_true')
-        eval_set_group.add_argument('--animal-eval-testdev2017', default=False, action='store_true')
+        eval_set_group.add_argument('--custom-animal-eval-test2017', default=False, action='store_true')
+        eval_set_group.add_argument('--custom-animal-eval-testdev2017', default=False, action='store_true')
 
-        group.add_argument('--animal-no-eval-annotation-filter',
+        group.add_argument('--custom-animal-no-eval-annotation-filter',
                            dest='animal_eval_annotation_filter',
                            default=True, action='store_false')
-        group.add_argument('--animal-eval-long-edge', default=cls.eval_long_edge, type=int,
+        group.add_argument('--custom-animal-eval-long-edge', default=cls.eval_long_edge, type=int,
                            dest='animal_eval_long_edge', help='set to zero to deactivate rescaling')
         assert not cls.eval_extended_scale
-        group.add_argument('--animal-eval-extended-scale', default=False, action='store_true',
+        group.add_argument('--custom-animal-eval-extended-scale', default=False, action='store_true',
                            dest='animal_eval_extended_scale',)
-        group.add_argument('--animal-eval-orientation-invariant',
+        group.add_argument('--custom-animal-eval-orientation-invariant',
                            default=cls.eval_orientation_invariant, type=float,
                            dest='animal_eval_orientation_invariant')
 
@@ -177,7 +179,7 @@ class AnimalKpCustom(DataModule):
     def _preprocess(self):
         encoders = (encoder.Cif(self.head_metas[0], bmin=self.b_min),
                     encoder.Caf(self.head_metas[1], bmin=self.b_min))
-
+        
         if not self.augmentation:
             return transforms.Compose([
                 transforms.NormalizeAnnotations(),
@@ -186,19 +188,25 @@ class AnimalKpCustom(DataModule):
                 transforms.EVAL_TRANSFORM,
                 transforms.Encoders(encoders),
             ])
+               
 
         if self.extended_scale:
             rescale_t = transforms.RescaleRelative(
                 scale_range=(0.2 * self.rescale_images,
                              2.5 * self.rescale_images),
                 power_law=True, stretch_range=(0.75, 1.33))
+            
         else:
             rescale_t = transforms.RescaleRelative(
                 scale_range=(0.3 * self.rescale_images,
                              2.0 * self.rescale_images),
                 power_law=True, stretch_range=(0.75, 1.33))
+        
+
 
         return transforms.Compose([
+            # add SDA here
+            
             transforms.NormalizeAnnotations(),
             transforms.RandomApply(
                 transforms.HFlip(ANIMAL_KEYPOINTS, HFLIP), 0.5),
@@ -214,6 +222,7 @@ class AnimalKpCustom(DataModule):
             transforms.CenterPad(self.square_edge),
             transforms.TRAIN_TRANSFORM,
             transforms.Encoders(encoders),
+            
         ])
 
     def train_loader(self):

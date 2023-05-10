@@ -42,6 +42,20 @@ args = argparse.Namespace(
     animal_eval_testdev2017=False
 )
 
+train_cmd = 'python3 -m openpifpaf.train \
+    --dataset custom_animal \
+    --basenet=shufflenetv2k16 \
+    --lr=0.00002 \
+    --momentum=0.95 \
+    --epochs=1 \
+    --lr-decay 160 260 \
+    --lr-decay-epochs=10  \
+    --weight-decay=1e-5 \
+    --weight-decay=1e-5 \
+    --val-interval 10 \
+    --loader-workers 2 \
+    --batch-size 1'
+
 def test_sda (sda):
     img = Image.open('data-animalpose/images/train/2007_001397.jpg')
     tensor_img = np.array(img)
@@ -51,15 +65,18 @@ def test_sda (sda):
 
 def main():
     config = openpifpaf.plugin.register()
-    print(openpifpaf.DATAMODULES)
+    #print(openpifpaf.DATAMODULES)
     dataset = AnimalKpCustom()
     sda = SDA(train_img='data-animalpose/images/train/', 
               val_img='data-animalpose/images/val/', 
               train_ann='data-animalpose/annotations/animal_keypoints_20_train.json',
               val_ann='data-animalpose/annotations/animal_keypoints_20_val.json')
     
-    test_sda(sda)
-    
+    #test_sda(sda)
+    #dataset.configure
+
+    subprocess.run(train_cmd, shell=True)
+
     pass
 
 from multiprocessing import freeze_support
@@ -77,19 +94,6 @@ if __name__ == '__main__':
 #    --image-output \
 #    --json-output\
 #    --dataset=custom_animal'
-#train_cmd = 'python3 -m openpifpaf.train \
-#    --dataset custom_animal \
-#    --basenet=shufflenetv2k16 \
-#    --lr=0.00002 \
-#    --momentum=0.95 \
-#    --epochs=10 \
-#    --lr-decay 160 260 \
-#    --lr-decay-epochs=10  \
-#    --weight-decay=1e-5 \
-#    --weight-decay=1e-5 \
-#    --val-interval 10 \
-#    --loader-workers 2 \
-#    --batch-size 1'
-# 
 
-#subprocess.run(train_cmd, shell=True)
+ 
+

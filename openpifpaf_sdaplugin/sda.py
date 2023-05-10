@@ -81,8 +81,9 @@ class SDA(transforms.Preprocess):
             return image, anns, meta
 
         # 2. Perform the augmentation:
-        #    a. Crop body parts from the dataset using keypoint locations
-        #    b. Add the cropped parts to other images at random locations
+        #   - choose random number of body parts to add to the image
+        #   - choose random body parts from the pool of body parts
+        #   - add them to the image
 
         # 3. Return the augmented image, anns, and meta
         return image, anns, meta
@@ -200,7 +201,7 @@ class SDA(transforms.Preprocess):
     def crop_dataset(self):
         annotations = json.load(open(self.train_ann))
         # iterate over the unique ids in the images
-        
+        pool = []
         for key in annotations['images']:
             # find all the keypoints image_id associated with this image id
             ann_index = [i for i, x in enumerate(annotations['annotations']) if x['image_id'] == key['id']]
@@ -215,13 +216,23 @@ class SDA(transforms.Preprocess):
             # save the cropped images
             os.makedirs('output', exist_ok=True)
             i = 0
+            
             for cropped_image in cropped_images:
                 for crop in cropped_image:
                     if len(crop) == 0:
                         continue
                     print(crop.shape)
-                    plt.imsave('output/cropped_'+str(key['id'])+ '_'+str(i)+'.jpg', crop)
+                    file_name = 'output/cropped_'+str(key['id'])+ '_'+str(i)+'.jpg'
+                    plt.imsave(file_name, crop)
+                    pool.append(file_name)
                     i += 1   
+
+        # output files to json
+
+        with open('output/cropped_bodyparts.txt', 'w') as file:
+            json.dump(pool, file, indent=4)
+
+        return 
         
 
 if __name__ == '__main__':

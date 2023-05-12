@@ -64,25 +64,21 @@ def draw_keypoint(image, keypoints):
 
     return im
 
+output_folder = 'data-animalpose/bodyparts/'
+bodypart_file = 'data-animalpose/bodyparts/cropped_bodyparts.json'
+traim_ann = 'data-animalpose/annotations/animal_keypoints_20_train.json'
+train_img = 'data-animalpose/images/train/'
+train_ann = 'data-animalpose/annotations/animal_keypoints_20_train.json'
+val_img = 'data-animalpose/images/val/'
+val_ann = 'data-animalpose/annotations/animal_keypoints_20_val.json'
+
+
 class SDA(transforms.Preprocess):
-    def __init__(self, 
-                 train_img = 'data-animalpose/images/train/', 
-                 train_ann = 'data-animalpose/images/val/', 
-                 val_ann = 'data-animalpose/annotations/animal_keypoints_20_train.json', 
-                 val_img = 'data-animalpose/annotations/animal_keypoints_20_val.json', 
-                 probability=0.5, tolerance=5, file = 'output/cropped_bodyparts.txt'):
+    def __init__(self, probability=0.5, tolerance=5):
         super().__init__()
         self.probability = probability
         self.tolerance = tolerance
-        self.train_img = train_img
-        self.val_img = val_img
-        self.train_ann = train_ann
-        self.val_ann = val_ann
-        self.bodyparts_file = file 
-        # read txt file with the body parts as a list
-        with open(self.bodyparts_file) as file:
-            self.bodyparts_pool = json.load(file)
-        #print("number of body parts: ",len(self.bodyparts_pool) )
+        print("sdaplugin init")
 
     def apply(self, image):
         # Implement the SDA logic here
@@ -100,9 +96,11 @@ class SDA(transforms.Preprocess):
         image = np.asarray(image, dtype=np.uint8)
         # get the image dimensions
         image_height, image_width = image.shape[:2]
+        # load the body parts pool
+        bodyparts = json.load(open(bodypart_file))
         for i in range(nb_bodyparts):
             # choose a random body part from the pool
-            bodypart = random.choice(self.bodyparts_pool)
+            bodypart = random.choice(bodyparts)
             # load the body part
             bodypart = plt.imread(bodypart)
             # get the body part dimensions
@@ -188,7 +186,7 @@ class SDA(transforms.Preprocess):
         pass
 
     def test_instance(self, image_id):
-        annotations = json.load(open(self.train_ann))
+        annotations = json.load(open(train_ann))
         # find the unique image in images with id equal to image_id
         img_index = [i for i, x in enumerate(annotations['images']) if x['id'] == image_id][0]
         ann_index = [i for i, x in enumerate(annotations['annotations']) if x['image_id'] == image_id]
@@ -203,7 +201,7 @@ class SDA(transforms.Preprocess):
         print("category ",category)
         print("\n")
         
-        image = os.path.join(self.train_img, img_file )
+        image = os.path.join(train_img, img_file )
         image = plt.imread(image)
     
         masks = []
@@ -234,52 +232,59 @@ class SDA(transforms.Preprocess):
 
         for cropped_image in cropped_images:
             for crop in cropped_image:
-                plt.imsave('output/cropped_'+str(i)+'.jpg', crop)
+                plt.imsave(output_folder+str(i)+'.jpg', crop)
                 i += 1
         return
     
     def crop_dataset(self):
-        annotations = json.load(open(self.train_ann))
+        # make output folder and child folders
+        os.makedirs(output_folder, exist_ok=True)
+        annotations = json.load(open(train_ann))
         # iterate over the unique ids in the images
         pool = []
+        print(annotations.keys())
+        print(annotations['images'][0].keys())
+        print(annotations['annotations'])
+        print(annotations['annotations'][0])
+        
+       
         for key in annotations['images']:
-            # find all the keypoints image_id associated with this image id
-            ann_index = [i for i, x in enumerate(annotations['annotations']) if x['image_id'] == key['id']]
-            image = plt.imread(os.path.join(self.train_img, key['file_name']))
+            #print(key['id'])
+            # find all the keypoints image_id associated with this image id            
+            ann_index = [i for i, x in enumerate(annotations['annotations']) if x['image_id'] == int(key['id'])]
+            file = os.path.join(train_img, key['file_name'])
+            image = plt.imread(file)
             cropped_images = []
             for ann in ann_index:
                 kp = annotations['annotations'][ann]['keypoints']
                 _, _, cropped_image = self.crop(image, kp)
                 cropped_images.append(cropped_image)
-            #print(key['id'], ann_index, len(cropped_images[-1]))
+            
 
             # save the cropped images
-            os.makedirs('output', exist_ok=True)
             i = 0
-            
             for cropped_image in cropped_images:
                 for crop in cropped_image:
                     if len(crop) == 0:
                         continue
-                    print(crop.shape)
-                    file_name = 'output/cropped_'+str(key['id'])+ '_'+str(i)+'.jpg'
-                    plt.imsave(file_name, crop)
-                    pool.append(file_name)
+                    #file_name = 'output/cropped_'+str(key['id'])+ '_'+str(i)+'.jpg'
+                    file_path = os.path.join(output_folder, 'cropped_'+str(key['id'])+ '_'+str(i)+'.jpg')
+                    plt.imsave(file_path, crop)
+                    pool.append(file_path)
                     i += 1   
-
-        # output files to json
-
-        with open('output/cropped_bodyparts.txt', 'w') as file:
-            json.dump(pool, file, indent=4)
-
+        
+        text_file = os.path.join(output_folder, 'cropped_bodyparts.json')
+        with open(text_file, 'w') as file:
+            json.dump(pool, file)
         return 
         
 
 if __name__ == '__main__':
+    
     sda = SDA(train_img='../data-animalpose/images/train/', 
               val_img='../data-animalpose/images/val/', 
               train_ann='../data-animalpose/annotations/animal_keypoints_20_train.json',
               val_ann='../data-animalpose/annotations/animal_keypoints_20_val.json')
     
-    sda.test_instance(10)
+    #sda.test_instance(10)
     sda.crop_dataset()

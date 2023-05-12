@@ -54,6 +54,7 @@ class AnimalKpCustom(DataModule):
     eval_long_edge = 0  # set to zero to deactivate rescaling
     eval_orientation_invariant = 0.0
     eval_extended_scale = False
+    loader_workers = 0
 
     def __init__(self):
         super().__init__()
@@ -73,11 +74,14 @@ class AnimalKpCustom(DataModule):
 
         cif.upsample_stride = self.upsample_stride
         cif.base_stride = 4
+
+        
         
         # NOTE:ADDED THIS LINES
         caf.upsample_stride = self.upsample_stride
         caf.base_stride = 4
         self.head_metas = [cif, caf]
+        print("animal dataset init")
 
     @classmethod
     def cli(cls, parser: argparse.ArgumentParser):
@@ -141,7 +145,7 @@ class AnimalKpCustom(DataModule):
                            dest='animal_eval_extended_scale',)
         group.add_argument('--custom-animal-eval-orientation-invariant',
                            default=cls.eval_orientation_invariant, type=float,
-                           dest='animal_eval_orientation_invariant')
+                           dest='animal_eval_orientation_invariant')        
 
     @classmethod
     def configure(cls, args: argparse.Namespace):
@@ -232,7 +236,7 @@ class AnimalKpCustom(DataModule):
             preprocess=self._preprocess(),
             annotation_filter=True,
             min_kp_anns=self.min_kp_anns,
-            category_ids=[1],
+            #category_ids=[1],
         )
         return torch.utils.data.DataLoader(
             train_data, batch_size=self.batch_size, shuffle=not self.debug,
@@ -246,7 +250,7 @@ class AnimalKpCustom(DataModule):
             preprocess=self._preprocess(),
             annotation_filter=True,
             min_kp_anns=self.min_kp_anns,
-            category_ids=[1],
+            #category_ids=[1],
         )
         return torch.utils.data.DataLoader(
             val_data, batch_size=self.batch_size, shuffle=False,

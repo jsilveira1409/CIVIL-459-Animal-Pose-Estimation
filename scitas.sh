@@ -11,4 +11,4 @@
 #SBATCH --reservation civil-459
 
 source venvs/jsilveira-venv/bin/activate
-python3 main.py
+python3 test.py

@@ -50,7 +50,7 @@ class AnimalKpCustom(DataModule):
     min_kp_anns = 1
     b_min = 1  # 1 pixel
 
-    eval_annotation_filter = True
+    eval_annotation_filter = False
     eval_long_edge = 0  # set to zero to deactivate rescaling
     eval_orientation_invariant = 0.0
     eval_extended_scale = False
@@ -137,7 +137,7 @@ class AnimalKpCustom(DataModule):
 
         group.add_argument('--custom-animal-no-eval-annotation-filter',
                            dest='animal_eval_annotation_filter',
-                           default=True, action='store_false')
+                           default=False, action='store_false')
         group.add_argument('--custom-animal-eval-long-edge', default=cls.eval_long_edge, type=int,
                            dest='animal_eval_long_edge', help='set to zero to deactivate rescaling')
         assert not cls.eval_extended_scale
@@ -234,10 +234,11 @@ class AnimalKpCustom(DataModule):
             image_dir=self.train_image_dir,
             ann_file=self.train_annotations,
             preprocess=self._preprocess(),
-            annotation_filter=True,
-            min_kp_anns=self.min_kp_anns,
+            annotation_filter=False,
+            #min_kp_anns=self.min_kp_anns,
             #category_ids=[1],
         )
+        self.loader_workers = 1
         return torch.utils.data.DataLoader(
             train_data, batch_size=self.batch_size, shuffle=not self.debug,
             pin_memory=self.pin_memory, num_workers=self.loader_workers, drop_last=True,
@@ -248,8 +249,8 @@ class AnimalKpCustom(DataModule):
             image_dir=self.val_image_dir,
             ann_file=self.val_annotations,
             preprocess=self._preprocess(),
-            annotation_filter=True,
-            min_kp_anns=self.min_kp_anns,
+            annotation_filter=False,
+            #min_kp_anns=self.min_kp_anns,
             #category_ids=[1],
         )
         return torch.utils.data.DataLoader(

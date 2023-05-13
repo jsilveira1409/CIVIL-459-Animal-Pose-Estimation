@@ -92,7 +92,6 @@ class SDA(transforms.Preprocess):
         #   - add them to the image
         
         nb_bodyparts = random.randint(1, 3)
-        print("nb_bodyparts added ",nb_bodyparts)
         image = np.asarray(image, dtype=np.uint8)
         # get the image dimensions
         image_height, image_width = image.shape[:2]
@@ -242,12 +241,7 @@ class SDA(transforms.Preprocess):
         annotations = json.load(open(train_ann))
         # iterate over the unique ids in the images
         pool = []
-        print(annotations.keys())
-        print(annotations['images'][0].keys())
-        print(annotations['annotations'])
-        print(annotations['annotations'][0])
         
-       
         for key in annotations['images']:
             #print(key['id'])
             # find all the keypoints image_id associated with this image id            

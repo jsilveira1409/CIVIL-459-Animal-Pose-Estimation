@@ -210,7 +210,7 @@ class AnimalKpCustom(DataModule):
 
         return transforms.Compose([
             # add SDA here
-            
+            SDA(),
             transforms.NormalizeAnnotations(),
             transforms.RandomApply(
                 transforms.HFlip(ANIMAL_KEYPOINTS, HFLIP), 0.5),

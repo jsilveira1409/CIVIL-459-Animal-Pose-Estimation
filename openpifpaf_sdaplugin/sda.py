@@ -106,8 +106,16 @@ class SDA(transforms.Preprocess):
             bodypart_height, bodypart_width = bodypart.shape[:2]
             
             # choose a random position to add the body part
-            x = random.randint(0, image_width - bodypart_width)
-            y = random.randint(0, image_height - bodypart_height)
+            # ensure image_width - bodypart_width > 0
+            # ensure image_height - bodypart_height > 0
+            if image_width - bodypart_width > 0 and image_height - bodypart_height > 0:
+                x = random.randint(0, image_width - bodypart_width)    
+                y = random.randint(0, image_height - bodypart_height)
+            else:
+                x = 0
+                y = 0
+            
+            
             # TODO:rotate image ? 
             # add the body part to the image
             #image[y : y+bodypart.shape[0], x : x+bodypart.shape[1]] = bodypart

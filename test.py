@@ -66,8 +66,8 @@ train_cmd = 'python3 -m openpifpaf.train \
     --weight-decay=1e-5 \
     --weight-decay=1e-5 \
     --val-interval 10 \
-    --loader-workers 2 \
-    --batch-size 1'
+    --loader-workers 1 \
+    --batch-size 8'
 
 
 

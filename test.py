@@ -253,7 +253,7 @@ def main():
 from multiprocessing import freeze_support
 
 if __name__ == '__main__':
-    #freeze_support()
-    #main()
-    sda = SDA()
-    test_sda(sda)
+    freeze_support()
+    main()
+    #sda = SDA()
+    #test_sda(sda)

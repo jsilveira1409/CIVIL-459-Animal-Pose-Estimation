@@ -301,13 +301,3 @@ class SDA(transforms.Preprocess):
             json.dump(pool, file)
         return 
         
-
-if __name__ == '__main__':
-    
-    sda = SDA(train_img='../data-animalpose/images/train/', 
-              val_img='../data-animalpose/images/val/', 
-              train_ann='../data-animalpose/annotations/animal_keypoints_20_train.json',
-              val_ann='../data-animalpose/annotations/animal_keypoints_20_val.json')
-    
-    #sda.test_instance(10)
-    sda.crop_dataset()

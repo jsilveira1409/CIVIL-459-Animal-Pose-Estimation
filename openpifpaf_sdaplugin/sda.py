@@ -10,12 +10,14 @@ import cv2
 import torch
 from PIL import Image
 
-
+KP_DIST_THRESHOLD = 10
+NB_BODY_PARTS = 5
+IMG_TO_BODYPART_RATION = 4
 
 # cow sheep horse cat dog
 labels = {'dog':1, 'cat':2, 'sheep':3, 'horse':4, 'cow':5} 
 
-face_color = (100, 200, 5)
+face_color = (100, 120, 5)
 limb_color =(100, 200, 5)
 other_color = (100, 200, 5)
 kp_color = (100, 200, 5)
@@ -80,7 +82,7 @@ class SDA(transforms.Preprocess):
         self.tolerance = tolerance
         print("sdaplugin init")
 
-    def apply(self, image):
+    def apply(self, image, keypoints):
         # Implement the SDA logic here
         # 1. Check if the augmentation should be applied based on the probability
         #if random.random() > self.probability:
@@ -91,10 +93,11 @@ class SDA(transforms.Preprocess):
         #   - choose random body parts from the pool of body parts
         #   - add them to the image
         
-        nb_bodyparts = random.randint(1, 3)
-        image = np.asarray(image, dtype=np.uint8)
+        nb_bodyparts = random.randint(1, NB_BODY_PARTS)
+        print("nb_bodyparts ",nb_bodyparts)
+        augmented_image = np.asarray(image, dtype=np.uint8).copy()
         # get the image dimensions
-        image_height, image_width = image.shape[:2]
+        image_height, image_width = augmented_image.shape[:2]
         # load the body parts pool
         bodyparts = json.load(open(bodypart_file))
         for i in range(nb_bodyparts):
@@ -104,29 +107,47 @@ class SDA(transforms.Preprocess):
             bodypart = plt.imread(bodypart)
             # get the body part dimensions
             bodypart_height, bodypart_width = bodypart.shape[:2]
-            
-            # choose a random position to add the body part
-            # ensure image_width - bodypart_width > 0
-            # ensure image_height - bodypart_height > 0
-            if image_width - bodypart_width > 0 and image_height - bodypart_height > 0:
-                x = random.randint(0, image_width - bodypart_width)    
-                y = random.randint(0, image_height - bodypart_height)
-            else:
-                x = 0
-                y = 0
-            
-            
-            # TODO:rotate image ? 
-            # add the body part to the image
-            #image[y : y+bodypart.shape[0], x : x+bodypart.shape[1]] = bodypart
-
-            image[y : y+bodypart_height, x : x+bodypart_width] = bodypart
+            # ensure the body part is not too big compared to the image
+            if image_height/bodypart_height > IMG_TO_BODYPART_RATION or image_width/bodypart_width > IMG_TO_BODYPART_RATION:
+                # choose a random position to add the body part
+                # ensure image_width - bodypart_width > 0
+                # ensure image_height - bodypart_height > 0
+                if image_width - bodypart_width > 0 and image_height - bodypart_height > 0:
+                    # choose a random position to add the body part not directly on top of keypoints
+                    x = random.randint(0, image_width - bodypart_width)
+                    y = random.randint(0, image_height - bodypart_height)
+                    nb_retries = 0
+                    not_on_kp = True
+                    # to avoid infinite loop
+                    while nb_retries < 30:
+                        # check if the body part is not on top of keypoints
+                        for i in range(0, len(keypoints), 3):
+                            if  x < keypoints[i] - KP_DIST_THRESHOLD and \
+                                keypoints[i] + KP_DIST_THRESHOLD < x + bodypart_width and \
+                                y < keypoints[i + 1] - KP_DIST_THRESHOLD and \
+                                keypoints[i + 1] + KP_DIST_THRESHOLD < y + bodypart_height:
+                                    continue
+                            else:
+                                x = random.randint(0, image_width - bodypart_width)
+                                y = random.randint(0, image_height - bodypart_height)
+                                nb_retries += 1
+                                not_on_kp = False
+                        if not_on_kp:
+                            break
+                        
+                else:
+                    x = 0
+                    y = 0
+                # TODO:rotate image ? 
+                # add the body part to the image
+                augmented_image[y : y+bodypart_height, x : x+bodypart_width] = bodypart
+                augmented_image = draw_keypoint(augmented_image, keypoints)
 
         # 3. Return the augmented image
             #transform to pil image
-        image = Image.fromarray(image)
+        augmented_image = Image.fromarray(augmented_image)
 
-        return image
+        return augmented_image
    
     def crop(self,image, keypoints):
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
@@ -181,7 +202,7 @@ class SDA(transforms.Preprocess):
         return mask, keypoints, bodyparts
 
     def __call__(self, image, anns=None, meta=None):
-        img = self.apply(image)
+        img = self.apply(image, anns['keypoints'])
         return img, anns, meta
     
     @classmethod

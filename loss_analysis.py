@@ -67,4 +67,6 @@ plt.ylabel('Loss')
 plt.title('Losses per Epoch')
 plt.plot(sda_epochs, sda_losses, label='with sda')
 plt.plot(no_sda_epochs, no_sda_losses, label='without sda')
+#show label
+plt.legend()
 plt.show()

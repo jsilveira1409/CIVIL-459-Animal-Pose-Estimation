@@ -82,18 +82,18 @@ keypoint_file = 'data-animalpose/keypoints.json'
 images_folder = 'data-animalpose/images/'
 
 def download_dataset():
-    #cmd = 'rm -rf data-animalpose'
-    #subprocess.call(cmd, shell=True)
-    #cmd = 'mkdir data-animalpose'
-    #subprocess.call(cmd, shell=True)
-    #cmd = 'gdown "https://drive.google.com/drive/folders/1xxm6ZjfsDSmv6C9JvbgiGrmHktrUjV5x" -O data-animalpose --folder'
-    #subprocess.call(cmd, shell=True)
+    cmd = 'rm -rf data-animalpose'
+    subprocess.call(cmd, shell=True)
+    cmd = 'mkdir data-animalpose'
+    subprocess.call(cmd, shell=True)
+    cmd = 'gdown "https://drive.google.com/drive/folders/1xxm6ZjfsDSmv6C9JvbgiGrmHktrUjV5x" -O data-animalpose --folder'
+    subprocess.call(cmd, shell=True)
     cmd = 'mkdir data-animalpose/output'
     subprocess.call(cmd, shell=True)
     cmd = 'unzip data-animalpose/images.zip -d data-animalpose/'
     subprocess.call(cmd, shell=True)
-    #cmd = 'rm data-animalpose/images.zip'
-    #subprocess.call(cmd, shell=True)
+    cmd = 'rm data-animalpose/images.zip'
+    subprocess.call(cmd, shell=True)
     print("Downloaded dataset")
 
 
@@ -213,11 +213,20 @@ def split_data():
         os.rename(images_folder + file_name, val_image_dir + file_name)
     print("Split data into train and val")
 
-def test_sda (sda):
-    img = Image.open('data-animalpose/images/train/2007_001397.jpg')
+def test_sda (sda, img_id=0):
+    #img = Image.open('data-animalpose/images/train/2007_001397.jpg')
+    # get image id from annotations
+    with open(train_annotations, 'r') as f:
+        input_dict = json.load(f)
+    img_name = input_dict['images'][img_id]['file_name']
+    keypoints = input_dict['annotations'][img_id]['keypoints']
+    img = Image.open(train_image_dir + img_name)
     tensor_img = np.array(img)
-    img1 = sda.apply(tensor_img)
+    print(keypoints)
+
+    img1 = sda.apply(tensor_img, keypoints)
     plt.imshow(tensor_img)
+    plt.imshow(img1)
     plt.show()
 
 def main():
@@ -244,5 +253,7 @@ def main():
 from multiprocessing import freeze_support
 
 if __name__ == '__main__':
-    freeze_support()
-    main()
+    #freeze_support()
+    #main()
+    sda = SDA()
+    test_sda(sda)

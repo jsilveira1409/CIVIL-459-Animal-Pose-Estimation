@@ -82,7 +82,12 @@ class SDA(transforms.Preprocess):
         self.tolerance = tolerance
         print("sdaplugin init")
 
-    def apply(self, image, keypoints):
+    def apply(self, image, ann):
+        # get the keypoints from all the annotations
+        keypoints = []
+        for kp in ann:
+            keypoints.extend(kp['keypoints'])
+
         # Implement the SDA logic here
         # 1. Check if the augmentation should be applied based on the probability
         #if random.random() > self.probability:
@@ -94,7 +99,7 @@ class SDA(transforms.Preprocess):
         #   - add them to the image
         
         nb_bodyparts = random.randint(1, NB_BODY_PARTS)
-        print("nb_bodyparts ",nb_bodyparts)
+        #print("nb_bodyparts ",nb_bodyparts)
         augmented_image = np.asarray(image, dtype=np.uint8).copy()
         # get the image dimensions
         image_height, image_width = augmented_image.shape[:2]
@@ -156,7 +161,7 @@ class SDA(transforms.Preprocess):
         # thicken the mask
         kernel = np.ones((10,10), np.uint8)
         mask = cv2.dilate(mask,kernel,iterations = 3)
-        # find the contours in the mask
+        #find the contours in the mask
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP , cv2.CHAIN_APPROX_SIMPLE)
         # get contour area and centroid
         moments = [] 
@@ -164,8 +169,7 @@ class SDA(transforms.Preprocess):
         for contour in contours:
             moment = cv2.moments(contour)
             area = cv2.contourArea(contour)
-
-            # centroid
+#            # centroid
             cx = int(moment['m10']/moment['m00'])
             if moment['m00'] != 0:
                 cx = int(moment['m10'] / moment['m00'])
@@ -191,8 +195,7 @@ class SDA(transforms.Preprocess):
         contours = [contour for i, contour in enumerate(contours) if i not in indices_to_remove]
         moments = [moment for i, moment in enumerate(moments) if i not in indices_to_remove]
         areas = [area for i, area in enumerate(areas) if i not in indices_to_remove]
-
-        # crop the different body parts and store them
+#        # crop the different body parts and store them
         bodyparts = []
         for i in range(len(contours)):
             x, y, w, h = cv2.boundingRect(contours[i])
@@ -202,7 +205,8 @@ class SDA(transforms.Preprocess):
         return mask, keypoints, bodyparts
 
     def __call__(self, image, anns=None, meta=None):
-        img = self.apply(image, anns['keypoints'])
+        #img = self.apply(image, anns['keypoints'])
+        img = self.apply(image, anns)
         return img, anns, meta
     
     @classmethod

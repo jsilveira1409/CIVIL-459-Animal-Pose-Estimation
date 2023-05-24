@@ -220,12 +220,13 @@ def test_sda (sda, img_id=0):
         input_dict = json.load(f)
     img_name = input_dict['images'][img_id]['file_name']
     keypoints = input_dict['annotations'][img_id]['keypoints']
+    anns = input_dict['annotations'][img_id]
+    print(anns)
     img = Image.open(train_image_dir + img_name)
     tensor_img = np.array(img)
-    print(keypoints)
 
-    img1 = sda.apply(tensor_img, keypoints)
-    plt.imshow(tensor_img)
+    img1 = sda.apply(tensor_img, anns)
+    #plt.imshow(tensor_img)
     plt.imshow(img1)
     plt.show()
 
@@ -253,7 +254,7 @@ def main():
 from multiprocessing import freeze_support
 
 if __name__ == '__main__':
-    freeze_support()
-    main()
-    #sda = SDA()
-    #test_sda(sda)
+    #freeze_support()
+    #main()
+    sda = SDA()
+    test_sda(sda,0)

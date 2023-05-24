@@ -11,7 +11,7 @@ import torch
 from PIL import Image
 
 KP_DIST_THRESHOLD = 10
-NB_BODY_PARTS = 5
+NB_BODY_PARTS = 3
 IMG_TO_BODYPART_RATION = 4
 
 # cow sheep horse cat dog
@@ -84,10 +84,8 @@ class SDA(transforms.Preprocess):
 
     def apply(self, image, ann):
         # get the keypoints from all the annotations
-        keypoints = []
-        for kp in ann:
-            keypoints.extend(kp['keypoints'])
-
+        keypoints = ann['keypoints']
+        
         # Implement the SDA logic here
         # 1. Check if the augmentation should be applied based on the probability
         #if random.random() > self.probability:
@@ -108,8 +106,10 @@ class SDA(transforms.Preprocess):
         for i in range(nb_bodyparts):
             # choose a random body part from the pool
             bodypart = random.choice(bodyparts)
+            print(bodypart)
             # load the body part
             bodypart = plt.imread(bodypart)
+            
             # get the body part dimensions
             bodypart_height, bodypart_width = bodypart.shape[:2]
             # ensure the body part is not too big compared to the image
@@ -124,7 +124,8 @@ class SDA(transforms.Preprocess):
                     nb_retries = 0
                     not_on_kp = True
                     # to avoid infinite loop
-                    while nb_retries < 30:
+                    while nb_retries < 5:
+                        not_on_kp = True
                         # check if the body part is not on top of keypoints
                         for i in range(0, len(keypoints), 3):
                             if  x < keypoints[i] - KP_DIST_THRESHOLD and \
@@ -140,16 +141,17 @@ class SDA(transforms.Preprocess):
                         if not_on_kp:
                             break
                         
-                else:
-                    x = 0
-                    y = 0
-                # TODO:rotate image ? 
-                # add the body part to the image
-                augmented_image[y : y+bodypart_height, x : x+bodypart_width] = bodypart
-                augmented_image = draw_keypoint(augmented_image, keypoints)
+                    # TODO:rotate image ? 
+                    # add the body part to the image
+                    # if body
+                    if not_on_kp == True:
+                        
+                        augmented_image[y : y+bodypart_height, x : x+bodypart_width] = bodypart
+                        augmented_image = draw_keypoint(augmented_image, keypoints)
 
         # 3. Return the augmented image
             #transform to pil image
+        print(not_on_kp)
         augmented_image = Image.fromarray(augmented_image)
 
         return augmented_image

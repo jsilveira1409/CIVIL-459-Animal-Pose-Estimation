@@ -1,7 +1,7 @@
 import openpifpaf
 from openpifpaf_sdaplugin import SDA
+from openpifpaf_sdaplugin.sda import draw_keypoint
 import numpy as np
-
 #from openpifpaf.plugins.animalpose import AnimalKp
 from openpifpaf_animalpose2.animal_kp_custom import AnimalKpCustom
 import matplotlib.pyplot as plt
@@ -17,6 +17,7 @@ import copy
 import random
 import os
 import subprocess
+import sys
 
 
 openpifpaf.show.Canvas.show = True
@@ -218,25 +219,44 @@ def test_sda (sda, img_id=0):
     # get image id from annotations
     with open(train_annotations, 'r') as f:
         input_dict = json.load(f)
-    img_name = input_dict['images'][img_id]['file_name']
-    keypoints = input_dict['annotations'][img_id]['keypoints']
-    anns = input_dict['annotations'][img_id]
-    print(anns)
-    img = Image.open(train_image_dir + img_name)
-    tensor_img = np.array(img)
+    #img_name = input_dict['images'][img_id]['file_name']
+    #keypoints = input_dict['annotations'][img_id]['keypoints']
+    #anns = input_dict['annotations'][img_id]
+    #print(anns)
 
-    img1 = sda.apply(tensor_img, anns)
-    #plt.imshow(tensor_img)
-    plt.imshow(img1)
-    plt.show()
+    # find all annotations with the same image id
+    anns = []
+    for ann in input_dict['annotations']:
+        if ann['image_id'] == img_id:
+            anns.append(ann)
+            print(ann)
+    
+    if len(anns) != 0:
+        # find image name from image id key
+        img_name = ''
+        for img in input_dict['images']:
+            if img['id'] == img_id:
+                img_name = img['file_name']
+        print(img_id, anns[0]['image_id'],img_name)
+        img = Image.open(train_image_dir + img_name)
+        tensor_img = np.array(img)
+        
+        img1, mask = sda.apply(tensor_img, anns[0])
+        for ann in anns:
+            img1 = draw_keypoint(img1, ann['keypoints'])
+
+        plt.imshow(img1)
+        plt.show()
+    else:
+        print("No annotations for image", img_id, "found. Probably in val set.")
 
 def main():
     # 1. Download dataset
-    download_dataset()
+    #download_dataset()
     # 2. Convert to COCO format 
-    adapt_to_coco()
+    #adapt_to_coco()
     # 3. Split data into train and val
-    split_data()
+    #split_data()
     
     # 4. Initialize SDA and crop the dataset, creating a body part pool
     sda = SDA()
@@ -248,7 +268,7 @@ def main():
     print(openpifpaf.DATAMODULES)
 
     # 6. Train the model
-    subprocess.run(train_cmd, shell=True)
+    #subprocess.run(train_cmd, shell=True)
     pass
 
 from multiprocessing import freeze_support
@@ -257,4 +277,6 @@ if __name__ == '__main__':
     #freeze_support()
     #main()
     sda = SDA()
-    test_sda(sda,0)
+    img_index = int(sys.argv[1])
+    print(img_index)
+    test_sda(sda,img_index)

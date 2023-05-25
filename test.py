@@ -2,7 +2,7 @@ import openpifpaf
 from openpifpaf_sdaplugin import SDA
 from openpifpaf_sdaplugin.sda import draw_keypoint
 import numpy as np
-#from openpifpaf.plugins.animalpose import AnimalKp
+import math
 from openpifpaf_animalpose2.animal_kp_custom import AnimalKpCustom
 import matplotlib.pyplot as plt
 import torch
@@ -205,7 +205,6 @@ def split_data():
 
     # move images to train and val folders
     for image in train_images_list:
-        #file_name = image[str(image['id'])]
         file_name = image['file_name']
         os.rename(images_folder + file_name, train_image_dir + file_name)
     for image in val_images_list:
@@ -214,7 +213,7 @@ def split_data():
         os.rename(images_folder + file_name, val_image_dir + file_name)
     print("Split data into train and val")
 
-def test_sda (sda, img_id=0):
+def test_sda (sda, img_id=0, show_all=False):
     #img = Image.open('data-animalpose/images/train/2007_001397.jpg')
     # get image id from annotations
     with open(train_annotations, 'r') as f:
@@ -237,16 +236,35 @@ def test_sda (sda, img_id=0):
         for img in input_dict['images']:
             if img['id'] == img_id:
                 img_name = img['file_name']
-        print(img_id, anns[0]['image_id'],img_name)
         img = Image.open(train_image_dir + img_name)
-        tensor_img = np.array(img)
-        
-        img1, mask = sda.apply(tensor_img, anns[0])
+        tensor_img = np.array(img)        
+        img, masks = sda.apply(tensor_img, anns[0])
         for ann in anns:
-            img1 = draw_keypoint(img1, ann['keypoints'])
+            img = draw_keypoint(img, ann['keypoints'])
 
-        plt.imshow(img1)
-        plt.show()
+        if show_all:
+            # show image and all the masks side by side in a square grid
+            nb_masks = len(masks)
+            nb_rows = math.ceil(math.sqrt(nb_masks + 1))
+            nb_cols = math.ceil((nb_masks + 1) / nb_rows)
+            fig, axs = plt.subplots(nb_rows, nb_cols, figsize=(10, 10))
+            axs[0, 0].imshow(img)
+            axs[0, 0].set_title('Original image')
+            for i in range(nb_rows):
+                for j in range(nb_cols):
+                    if i * nb_cols + j < nb_masks:
+                        if i == 0 and j == 0:
+                            j += 1
+                        axs[i, j].imshow(masks[i * nb_cols + j])
+                        axs[i, j].set_title('Mask ' + str(i * nb_cols + j))
+            plt.show()
+        else:
+            plt.imshow(img)
+            plt.show()
+            for mask in masks:
+                plt.imshow(mask)
+                plt.show()
+        
     else:
         print("No annotations for image", img_id, "found. Probably in val set.")
 
@@ -274,9 +292,10 @@ def main():
 from multiprocessing import freeze_support
 
 if __name__ == '__main__':
-    #freeze_support()
-    #main()
+    freeze_support()
+    main()
     sda = SDA()
     img_index = int(sys.argv[1])
+    show_all = False
     print(img_index)
-    test_sda(sda,img_index)
+    test_sda(sda,img_index, show_all)

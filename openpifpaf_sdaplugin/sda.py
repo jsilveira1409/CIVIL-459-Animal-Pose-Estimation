@@ -1,6 +1,7 @@
 import openpifpaf.transforms as transforms
 from argparse import ArgumentParser
 import random
+from scipy import ndimage
 import json
 import argparse
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ from PIL import Image
 
 KP_DIST_THRESHOLD = 10
 NB_BODY_PARTS = 5
-IMG_TO_BODYPART_RATION = 4
+IMG_TO_BODYPART_RATION = 3
 CONTOUR_DIST_THRESHOLD = 10
 
 # cow sheep horse cat dog
@@ -40,11 +41,18 @@ def draw_keypoint(image, keypoints):
         17-19 (others): throat, withers, tailbase
     '''
 
+    #segmts = [  (0,1), (0,2), (1,2), (0,3), (1,4), (3,4),
+    #            (2,17), (18,19),
+    #            (5,9), (6,10), (7,11), (8,12),
+    #            (9,13), (10,14), (11,15), (12,16)]
+
+    # everything is more connected so the mask takes more of the image
     segmts = [  (0,1), (0,2), (1,2), (0,3), (1,4), (3,4),
-                (2,17),# (18,19),
+                (1,3), (0,4), (2,17),          
+                (2,17), (18,19),
                 (5,9), (6,10), (7,11), (8,12),
-                (9,13), (10,14), (11,15), (12,16)]
-    
+                (9,13), (10,14), (11,15), (12,16),
+                (17,18), (18,19)]
     im = image.copy()
     for i in range(len(segmts)):
 
@@ -97,21 +105,24 @@ class SDA(transforms.Preprocess):
         # load the body parts pool
         bodyparts = json.load(open(bodypart_file))
         # load the masks pool
-        masks = json.load(open(masks_file))
-
+        masks_path = json.load(open(masks_file))
+        masks = []
         for i in range(nb_bodyparts):
             # choose a random body part from the pool and get the index
             index = random.randint(0, len(bodyparts) - 1)
             # get the body part path
             bodypart = bodyparts[index]
             # get the mask path
-            mask = cv2.imread(masks[index])
+            mask = cv2.imread(masks_path[index])
             # fill the holes in the mask      
-            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-            #mask = plt.imread(mask)
+            #kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+            #mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
             # load the body part
-            bodypart = plt.imread(bodypart)
+            bodypart = cv2.imread(bodypart)
+            # randomly rotate the body part and the mask (same angle for both of course)
+            angle = random.randint(0, 360)
+            bodypart = ndimage.rotate(bodypart, angle)
+            mask = ndimage.rotate(mask, angle)
             # get the body part dimensions
             bodypart_height, bodypart_width = bodypart.shape[:2]
             # ensure the body part is not too big compared to the image
@@ -144,10 +155,6 @@ class SDA(transforms.Preprocess):
                         if not_on_kp:
                             break
                         
-                    # TODO:rotate image ? 
-                    # add the body part to the image
-                    # if body
-                    #if not_on_kp == True:
                     # add the pixels of the cropped body part to the image if the mask is 1 in that position
                     for i in range(bodypart_height):
                         for j in range(bodypart_width):
@@ -156,12 +163,14 @@ class SDA(transforms.Preprocess):
                     
                     # TODO should remove this for training
                     #augmented_image = draw_keypoint(augmented_image, keypoints)
+                    # save the mask
+                    masks.append(mask)
 
         # 3. Return the augmented image
         # TODO: check this during training, for now I moved this to apply
         #augmented_image = Image.fromarray(augmented_image)
 
-        return augmented_image, mask
+        return augmented_image, masks
    
     def crop(self,image, keypoints):
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
@@ -169,11 +178,14 @@ class SDA(transforms.Preprocess):
         mask = draw_keypoint(mask, keypoints)
         # thicken the mask
         kernel = np.ones((7,7), np.uint8)
-        mask = cv2.dilate(mask,kernel, iterations=4)
+        mask = cv2.dilate(mask,kernel, iterations=3)
         # transform into a binary mask
         ret, mask = cv2.threshold(mask, 10, 255, cv2.THRESH_BINARY)
         #find the contours in the mask
-        contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP , cv2.CHAIN_APPROX_SIMPLE)
+        #contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP , cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP , cv2.CHAIN_APPROX_TC89_KCOS)
+        # draw the contours on the mask
+        cv2.drawContours(mask, contours, -1, (255,255,255), thickness=cv2.FILLED)
         # get contour area and centroid
         moments = [] 
         areas = []
@@ -197,7 +209,7 @@ class SDA(transforms.Preprocess):
                     continue
                 dist = np.sqrt((moments[i][0] - moments[j][0])**2 + (moments[i][1] - moments[j][1])**2)
                 if dist < CONTOUR_DIST_THRESHOLD:
-                    if areas[i] > areas[j]:
+                    if areas[i] < areas[j]:
                         indices_to_remove.add(j)
                     else:
                         indices_to_remove.add(i)
@@ -206,7 +218,7 @@ class SDA(transforms.Preprocess):
         contours = [contour for i, contour in enumerate(contours) if i not in indices_to_remove]
         moments = [moment for i, moment in enumerate(moments) if i not in indices_to_remove]
         areas = [area for i, area in enumerate(areas) if i not in indices_to_remove]
-#        # crop the different body parts and store them
+        # crop the different body parts and store them
         bodyparts = []
         masks = []
         for i in range(len(contours)):

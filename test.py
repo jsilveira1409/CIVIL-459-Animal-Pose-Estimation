@@ -129,7 +129,7 @@ def adapt_to_coco():
             'bbox': annotation['bbox'],
             'keypoints': convert_keypoints_format(annotation['keypoints']),
             'num_keypoints': annotation['num_keypoints'],
-            #'iscrowd': 0,
+            'iscrowd': 0,
         }
         annotations_list.append(new_annotation)
     output_dict['annotations'] = annotations_list
@@ -268,6 +268,11 @@ def test_sda (sda, img_id=0, show_all=False):
     else:
         print("No annotations for image", img_id, "found. Probably in val set.")
 
+def add_iscrowd(output_dict):
+    for ann in output_dict['annotations']:
+        ann['iscrowd'] = 0
+    return output_dict
+
 def main():
     # 1. Download dataset
     #download_dataset()
@@ -289,11 +294,25 @@ def main():
     #subprocess.run(train_cmd, shell=True)
     pass
 
+def add_iscrowd():
+    with open(train_annotations, 'r') as f:
+        input_dict = json.load(f)
+    output_dict = add_iscrowd(input_dict)
+    with open(train_annotations, 'w') as f:
+        json.dump(output_dict, f, indent=4)
+    
+    with open(val_annotations, 'r') as f:
+        input_dict = json.load(f)
+    output_dict = add_iscrowd(input_dict)
+    with open(val_annotations, 'w') as f:
+        json.dump(output_dict, f, indent=4)
+
+
 from multiprocessing import freeze_support
 
 if __name__ == '__main__':
-    freeze_support()
-    main()
+    #freeze_support()
+    #main()
     sda = SDA()
     img_index = int(sys.argv[1])
     show_all = False

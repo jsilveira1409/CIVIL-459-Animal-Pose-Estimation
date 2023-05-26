@@ -11,9 +11,9 @@ import cv2
 import torch
 from PIL import Image
 
-KP_DIST_THRESHOLD = 10
+KP_DIST_THRESHOLD = 5
 NB_BODY_PARTS = 5
-IMG_TO_BODYPART_RATION = 3
+IMG_TO_BODYPART_RATION = 4
 CONTOUR_DIST_THRESHOLD = 10
 
 # cow sheep horse cat dog
@@ -125,8 +125,19 @@ class SDA(transforms.Preprocess):
             mask = ndimage.rotate(mask, angle)
             # get the body part dimensions
             bodypart_height, bodypart_width = bodypart.shape[:2]
+            # resize the body part to fit the image
+            if image_height/bodypart_height < IMG_TO_BODYPART_RATION or image_width/bodypart_width < IMG_TO_BODYPART_RATION:
+                ratio = min(image_height/bodypart_height, image_width/bodypart_width)
+                bodypart = cv2.resize(bodypart, (int(bodypart_width * ratio), int(bodypart_height * ratio)))
+                mask = cv2.resize(mask, (int(bodypart_width * ratio), int(bodypart_height * ratio)))
+                bodypart_height, bodypart_width = bodypart.shape[:2]
             # ensure the body part is not too big compared to the image
             if image_height/bodypart_height > IMG_TO_BODYPART_RATION or image_width/bodypart_width > IMG_TO_BODYPART_RATION:
+                # apply a random scale to the body part, between 0.5 and 1 of the Image to body part ratio
+                scale = random.uniform(0.5, 1) * IMG_TO_BODYPART_RATION
+                bodypart = cv2.resize(bodypart, (int(bodypart_width * scale), int(bodypart_height * scale)))
+                mask = cv2.resize(mask, (int(bodypart_width * scale), int(bodypart_height * scale)))
+                bodypart_height, bodypart_width = bodypart.shape[:2]
                 # choose a random position to add the body part
                 # ensure image_width - bodypart_width > 0
                 # ensure image_height - bodypart_height > 0
@@ -182,8 +193,8 @@ class SDA(transforms.Preprocess):
         # transform into a binary mask
         ret, mask = cv2.threshold(mask, 10, 255, cv2.THRESH_BINARY)
         #find the contours in the mask
-        #contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP , cv2.CHAIN_APPROX_SIMPLE)
-        contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP , cv2.CHAIN_APPROX_TC89_KCOS)
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP , cv2.CHAIN_APPROX_SIMPLE)
+        #contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP , cv2.CHAIN_APPROX_TC89_KCOS)
         # draw the contours on the mask
         cv2.drawContours(mask, contours, -1, (255,255,255), thickness=cv2.FILLED)
         # get contour area and centroid

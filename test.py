@@ -238,7 +238,7 @@ def test_sda (sda, img_id=0, show_all=False):
                 img_name = img['file_name']
         img = Image.open(train_image_dir + img_name)
         tensor_img = np.array(img)        
-        img, masks = sda.apply(tensor_img, anns[0])
+        img, masks, bodypart_kp  = sda.apply(tensor_img, anns[0])
         for ann in anns:
             img = draw_keypoint(img, ann['keypoints'])
 
@@ -261,9 +261,6 @@ def test_sda (sda, img_id=0, show_all=False):
         else:
             plt.imshow(img)
             plt.show()
-            for mask in masks:
-                plt.imshow(mask)
-                plt.show()
         
     else:
         print("No annotations for image", img_id, "found. Probably in val set.")
@@ -311,10 +308,17 @@ def add_iscrowd():
 from multiprocessing import freeze_support
 
 if __name__ == '__main__':
-    #freeze_support()
-    #main()
+    freeze_support()
+    main()
     sda = SDA()
     img_index = int(sys.argv[1])
     show_all = False
     print(img_index)
     test_sda(sda,img_index, show_all)
+    kp_dict = json.load(open('data-animalpose/bodyparts/all_bodyparts_kp.json', 'r'))
+    part_indx = int(sys.argv[1])
+    img = plt.imread(kp_dict[part_indx]['bodypart'])
+    img = draw_keypoint(img, kp_dict[part_indx]['keypoints'])
+    plt.imshow(img)
+    plt.show()
+

@@ -1,8 +1,8 @@
 import openpifpaf
 from openpifpaf_sdaplugin import SDA
+from openpifpaf_sdaplugin.sda import draw_keypoint
 import numpy as np
-
-#from openpifpaf.plugins.animalpose import AnimalKp
+import math
 from openpifpaf_animalpose2.animal_kp_custom import AnimalKpCustom
 import matplotlib.pyplot as plt
 import torch
@@ -17,6 +17,7 @@ import copy
 import random
 import os
 import subprocess
+import sys
 
 
 openpifpaf.show.Canvas.show = True
@@ -128,7 +129,7 @@ def adapt_to_coco():
             'bbox': annotation['bbox'],
             'keypoints': convert_keypoints_format(annotation['keypoints']),
             'num_keypoints': annotation['num_keypoints'],
-            #'iscrowd': 0,
+            'iscrowd': 0,
         }
         annotations_list.append(new_annotation)
     output_dict['annotations'] = annotations_list
@@ -204,7 +205,6 @@ def split_data():
 
     # move images to train and val folders
     for image in train_images_list:
-        #file_name = image[str(image['id'])]
         file_name = image['file_name']
         os.rename(images_folder + file_name, train_image_dir + file_name)
     for image in val_images_list:
@@ -213,30 +213,70 @@ def split_data():
         os.rename(images_folder + file_name, val_image_dir + file_name)
     print("Split data into train and val")
 
-def test_sda (sda, img_id=0):
+def test_sda (sda, img_id=0, show_all=False):
     #img = Image.open('data-animalpose/images/train/2007_001397.jpg')
     # get image id from annotations
     with open(train_annotations, 'r') as f:
         input_dict = json.load(f)
-    img_name = input_dict['images'][img_id]['file_name']
-    keypoints = input_dict['annotations'][img_id]['keypoints']
-    anns = input_dict['annotations'][img_id]
-    print(anns)
-    img = Image.open(train_image_dir + img_name)
-    tensor_img = np.array(img)
+    #img_name = input_dict['images'][img_id]['file_name']
+    #keypoints = input_dict['annotations'][img_id]['keypoints']
+    #anns = input_dict['annotations'][img_id]
+    #print(anns)
 
-    img1 = sda.apply(tensor_img, anns)
-    #plt.imshow(tensor_img)
-    plt.imshow(img1)
-    plt.show()
+    # find all annotations with the same image id
+    anns = []
+    for ann in input_dict['annotations']:
+        if ann['image_id'] == img_id:
+            anns.append(ann)
+            print(ann)
+    
+    if len(anns) != 0:
+        # find image name from image id key
+        img_name = ''
+        for img in input_dict['images']:
+            if img['id'] == img_id:
+                img_name = img['file_name']
+        img = Image.open(train_image_dir + img_name)
+        tensor_img = np.array(img)        
+        img, masks, bodypart_kp  = sda.apply(tensor_img, anns[0])
+        for ann in anns:
+            img = draw_keypoint(img, ann['keypoints'])
+
+        if show_all:
+            # show image and all the masks side by side in a square grid
+            nb_masks = len(masks)
+            nb_rows = math.ceil(math.sqrt(nb_masks + 1))
+            nb_cols = math.ceil((nb_masks + 1) / nb_rows)
+            fig, axs = plt.subplots(nb_rows, nb_cols, figsize=(10, 10))
+            axs[0, 0].imshow(img)
+            axs[0, 0].set_title('Original image')
+            for i in range(nb_rows):
+                for j in range(nb_cols):
+                    if i * nb_cols + j < nb_masks:
+                        if i == 0 and j == 0:
+                            j += 1
+                        axs[i, j].imshow(masks[i * nb_cols + j])
+                        axs[i, j].set_title('Mask ' + str(i * nb_cols + j))
+            plt.show()
+        else:
+            plt.imshow(img)
+            plt.show()
+        
+    else:
+        print("No annotations for image", img_id, "found. Probably in val set.")
+
+def add_iscrowd(output_dict):
+    for ann in output_dict['annotations']:
+        ann['iscrowd'] = 0
+    return output_dict
 
 def main():
     # 1. Download dataset
-    download_dataset()
+    #download_dataset()
     # 2. Convert to COCO format 
-    adapt_to_coco()
+    #adapt_to_coco()
     # 3. Split data into train and val
-    split_data()
+    #split_data()
     
     # 4. Initialize SDA and crop the dataset, creating a body part pool
     sda = SDA()
@@ -248,13 +288,37 @@ def main():
     print(openpifpaf.DATAMODULES)
 
     # 6. Train the model
-    subprocess.run(train_cmd, shell=True)
+    #subprocess.run(train_cmd, shell=True)
     pass
+
+def add_iscrowd():
+    with open(train_annotations, 'r') as f:
+        input_dict = json.load(f)
+    output_dict = add_iscrowd(input_dict)
+    with open(train_annotations, 'w') as f:
+        json.dump(output_dict, f, indent=4)
+    
+    with open(val_annotations, 'r') as f:
+        input_dict = json.load(f)
+    output_dict = add_iscrowd(input_dict)
+    with open(val_annotations, 'w') as f:
+        json.dump(output_dict, f, indent=4)
+
 
 from multiprocessing import freeze_support
 
 if __name__ == '__main__':
-    #freeze_support()
-    #main()
+    freeze_support()
+    main()
     sda = SDA()
-    test_sda(sda,0)
+    img_index = int(sys.argv[1])
+    show_all = False
+    print(img_index)
+    test_sda(sda,img_index, show_all)
+    kp_dict = json.load(open('data-animalpose/bodyparts/all_bodyparts_kp.json', 'r'))
+    part_indx = int(sys.argv[1])
+    img = plt.imread(kp_dict[part_indx]['bodypart'])
+    img = draw_keypoint(img, kp_dict[part_indx]['keypoints'])
+    plt.imshow(img)
+    plt.show()
+

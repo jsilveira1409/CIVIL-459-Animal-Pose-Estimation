@@ -11,10 +11,22 @@ In the original paper [1], the technique was applied to a top-down single-person
 Therefore, during the cropping phase, we extract the bodyparts and their local keypoints, which are then added to the samples and ground truth, randomly, during training.
 
 The main goal of this approach is to enhance the model's robustness to occlusion, even when one animal occludes another. 
+
+Bodyparts look like this:
+
+![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/6b55ae36-0f0b-462b-9031-7a8a8585d67d)
+![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/ed5ea4ae-c497-469d-ab8e-c3eaae476528)
+
+And their Masks look like this:
+
+![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/b272625f-89e5-4a4e-91c6-c6a385a8a27a)
+![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/f2caaf40-d922-4cff-bcdb-c59908a88906)
+
+Which then allows us to do 
+
 ## Usage/Examples
 
 The training was conducted on [Paperspace](https://www.paperspace.com/). The Virtual Machine can be access here : 
-
  **[Paperspace VM](https://console.paperspace.com/jsilveira1409/notebook/rwp2eb9tnfijzsh)**
 
 Depending on the session, OpenPifPaf and PyCocoTools need to be installed :

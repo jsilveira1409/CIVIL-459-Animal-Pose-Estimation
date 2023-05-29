@@ -4,6 +4,8 @@ This repository implements the Semantic Data Augmentation (SDA) technique for An
 
 The SDA Plugin works by iterating over the dataset and applying cropping to different body parts using keypoint data. Each body part is masked and extracted individually, although the quality of the cropped body parts may not be perfect. Random rotation and scaling are also applied to the individual body parts. The positioning of the body parts is currently random, but in the future, Adversarial Positioning will be implemented. Adversarial Positioning aims to add leg parts next to the ground truth legs to confuse the model and improve its generalization capabilities. 
 
+![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/33fc8b8b-c512-42cf-94fe-3eb4e5cf1078)
+
 In the original paper [1], the technique was applied to a top-down single-person detection network. However, in OpenPifPaf, which is a bottom-up multi-person detection model, modifications are made to the ground truth of the samples. The keypoints of the added body parts are included in the ground truth to incorporate them into the original image.
 
 Therefore, during the cropping phase, we extract the bodyparts and their local keypoints, which are then added to the samples and ground truth, randomly, during training.

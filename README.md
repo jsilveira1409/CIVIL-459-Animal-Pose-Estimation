@@ -22,7 +22,12 @@ And their Masks look like this:
 ![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/b272625f-89e5-4a4e-91c6-c6a385a8a27a)
 ![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/f2caaf40-d922-4cff-bcdb-c59908a88906)
 
-Which then allows us to do 
+Which then allows us to extract them with less background than just getting the contours. The SDA augmentation result looks like this:
+
+Some Results are better than others :
+
+![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/e9c402dc-78f5-4217-b8cd-ec179854b470)
+
 
 ## Usage/Examples
 

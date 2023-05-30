@@ -1,5 +1,6 @@
 # CIVIL-459 OpenPifPaf SDA plugin
 
+## Contribution Overview
 This repository implements the Semantic Data Augmentation (SDA) technique for Animal 2D Pose Estimation. The SDA plugin is based on the "Adversarial Semantic Data Augmentation for Human Pose Estimation" paper [1].
 
 The SDA Plugin works by iterating over the dataset and applying cropping to different body parts using keypoint data. Each body part is masked and extracted individually, although the quality of the cropped body parts may not be perfect. Random rotation and scaling are also applied to the individual body parts. The positioning of the body parts is currently random, but in the future, Adversarial Positioning will be implemented. Adversarial Positioning aims to add leg parts next to the ground truth legs to confuse the model and improve its generalization capabilities. 
@@ -11,6 +12,59 @@ In the original paper [1], the technique was applied to a top-down single-person
 Therefore, during the cropping phase, we extract the bodyparts and their local keypoints, which are then added to the samples and ground truth, randomly, during training.
 
 The main goal of this approach is to enhance the model's robustness to occlusion, even when one animal occludes another. 
+
+
+## Experimental Setup
+
+The Plugin has been tested on Paperspace.com, training the OpenPifPaf model for 200 epochs, with the following hyperparameters :
+
+- Learning Rate : 0.0003
+- Momentum : 0.95
+- Batch Size : 4 (or 8 depending on the available GPU's on Paperspace)
+- Learning Rate Warm Start at 200 with shufflenetv2k30 checkpoint
+
+```
+python3 -m openpifpaf.train  --lr=0.0003 --momentum=0.95 --clip-grad-value=10.0 --b-scale=10.0 --batch-size=8 --loader-workers=12 --epochs=600 --lr-decay 280 300 --lr-decay-epochs=10 --val-interval 5 --checkpoint=shufflenetv2k30 --lr-warm-up-start-epoch=200 --dataset=custom_animal --animal-square-edge=385 --animal-upsample=2 --animal-bmin=2 --animal-extended-scale --weight-decay=1e-5
+```
+
+## Dataset Description
+
+The dataset used is the [Cross-domain Adaptation For Animal Pose Estimation](https://sites.google.com/view/animal-pose/). The [test.py](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/blob/main/test.py) script downloads, unzips, converts the dataset into COCO format and splits the data. Then, the SDA module crops the dataset into bodyparts and finally the training process is launched. 
+```
+python3 train.py
+```
+
+
+## Usage 
+
+The training was conducted on [Paperspace](https://www.paperspace.com/). The Virtual Machine can be access here : 
+ **[Paperspace VM](https://console.paperspace.com/jsilveira1409/notebook/rwp2eb9tnfijzsh)**
+
+Depending on the session, OpenPifPaf and PyCocoTools need to be installed :
+
+```bash
+$ pip install openpifpaf & pip install pycocotools
+```
+
+Then by running the [train.py](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/blob/main/test.py) script, we can execute the whole pipeline up until training:
+```
+def main():
+  # 1. Download dataset
+    download_dataset()
+    # 2. Convert to COCO format 
+    adapt_to_coco()
+    # 3. Split data into train and val
+    split_data()
+    # 4. Initialize SDA and crop the dataset, creating a body part pool
+    sda = SDA()
+    sda.crop_dataset()
+    # 5. Configure plugins
+    config = openpifpaf.plugin.register()
+    # 6. Train the model
+    subprocess.run(train_cmd, shell=True)
+```
+
+## Examples
 
 Bodyparts look like this:
 
@@ -24,22 +78,9 @@ And their Masks look like this:
 
 Which then allows us to extract them with less background than just getting the contours. The SDA augmentation result looks like this:
 
-Some Results are better than others :
+Some Results are better than others...
 
 ![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/e9c402dc-78f5-4217-b8cd-ec179854b470)
-
-
-## Usage/Examples
-
-The training was conducted on [Paperspace](https://www.paperspace.com/). The Virtual Machine can be access here : 
- **[Paperspace VM](https://console.paperspace.com/jsilveira1409/notebook/rwp2eb9tnfijzsh)**
-
-Depending on the session, OpenPifPaf and PyCocoTools need to be installed :
-
-```bash
-$ pip install openpifpaf & pip install pycocotools
-```
-
 
 
 

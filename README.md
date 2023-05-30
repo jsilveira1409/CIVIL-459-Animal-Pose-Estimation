@@ -1,5 +1,6 @@
 # CIVIL-459 OpenPifPaf SDA plugin
 
+## Contribution Overview
 This repository implements the Semantic Data Augmentation (SDA) technique for Animal 2D Pose Estimation. The SDA plugin is based on the "Adversarial Semantic Data Augmentation for Human Pose Estimation" paper [1].
 
 The SDA Plugin works by iterating over the dataset and applying cropping to different body parts using keypoint data. Each body part is masked and extracted individually, although the quality of the cropped body parts may not be perfect. Random rotation and scaling are also applied to the individual body parts. The positioning of the body parts is currently random, but in the future, Adversarial Positioning will be implemented. Adversarial Positioning aims to add leg parts next to the ground truth legs to confuse the model and improve its generalization capabilities. 
@@ -24,7 +25,7 @@ And their Masks look like this:
 
 Which then allows us to extract them with less background than just getting the contours. The SDA augmentation result looks like this:
 
-Some Results are better than others :
+Some Results are better than others...
 
 ![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/e9c402dc-78f5-4217-b8cd-ec179854b470)
 

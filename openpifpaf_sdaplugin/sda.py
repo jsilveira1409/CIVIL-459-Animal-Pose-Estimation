@@ -83,13 +83,26 @@ train_img = 'data-animalpose/images/train/'
 train_ann = 'data-animalpose/annotations/animal_keypoints_20_train.json'
 val_img = 'data-animalpose/images/val/'
 val_ann = 'data-animalpose/annotations/animal_keypoints_20_val.json'
-
+all_bodypart_dict = None
 
 class SDA(transforms.Preprocess):
     def __init__(self, probability=0.5, tolerance=5):
+        #global all_bodypart_dict
         super().__init__()
         self.probability = probability
         self.tolerance = tolerance
+        #self.all_bodypart_dict = json.load(open(all_bodypart_file))
+        # create the data-animalpose/bodyparts folder if it does not exist
+        if not os.path.exists(output_folder):
+            print("output_folder does not exist")
+            # create the folder
+            os.makedirs(output_folder)
+        # create all_bodypart_file if it does not exist
+        if not os.path.exists(all_bodypart_file):
+            print("all_bodypart_file does not exist")
+            # create the json file
+            with open(all_bodypart_file, "w") as file:
+                json.dump({}, file)  # Write an empty dictionary to the file
         self.all_bodypart_dict = json.load(open(all_bodypart_file))
         print("sdaplugin init")
 
@@ -102,12 +115,12 @@ class SDA(transforms.Preprocess):
         pass
 
     def __call__(self, image, anns=None, meta=None):
+        #self.all_bodypart_dict = json.load(open(all_bodypart_file))
         #img = self.apply(image, anns['keypoints'])
         img,_, bodypart_keypoints = self.apply(image, anns)
         augmented_image = Image.fromarray(img)
         new_keypoints = []
         for kps in bodypart_keypoints:
-            print("FLAG",kps)
             for kp in kps:
                 new_keypoints.append(kp)
             new_anns = {'id': anns[0]['id'],
@@ -120,11 +133,10 @@ class SDA(transforms.Preprocess):
                         'visible': 1}
             anns.append(new_anns)
             new_keypoints = []
-        print("new_anns ",anns)
-
         return augmented_image, anns, meta
 
     def apply(self, image, ann):
+        #global all_bodypart_dict
         # TODO change this
         nb_bodyparts = NB_BODY_PARTS
         augmented_image = np.asarray(image, dtype=np.uint8).copy()
@@ -136,7 +148,7 @@ class SDA(transforms.Preprocess):
         # load the masks pool
         #masks_path = json.load(open(masks_file))
         new_keypoints = []
-        
+        #self.all_bodypart_dict = json.load(open(all_bodypart_file))
         masks = []
         for i in range(nb_bodyparts):
             # choose a random body part from the pool and get the index
@@ -147,9 +159,7 @@ class SDA(transforms.Preprocess):
             # get the mask path
             mask = cv2.imread(self.all_bodypart_dict[index]['mask'])
             # get the keypoints from the mask and save them
-            print("bodypart index",self.all_bodypart_dict[index]['keypoints'])
             new_keypoints.append(self.all_bodypart_dict[index]['keypoints'])
-            print("new_keypoints ",new_keypoints)
             # fill the holes in the mask      
             #kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
             # load the body part
@@ -169,7 +179,7 @@ class SDA(transforms.Preprocess):
             # ensure the body part is not too big compared to the image
             if image_height/bodypart_height > IMG_TO_BODYPART_RATION or image_width/bodypart_width > IMG_TO_BODYPART_RATION:
                 # apply a random scale to the body part, between 0.5 and 1 of the Image to body part ratio
-                scale = random.uniform(0.1, 1) * IMG_TO_BODYPART_RATION
+                scale = random.uniform(0.5, 1) * IMG_TO_BODYPART_RATION
                 bodypart = cv2.resize(bodypart, (int(bodypart_width * scale), int(bodypart_height * scale)))
                 mask = cv2.resize(mask, (int(bodypart_width * scale), int(bodypart_height * scale)))
                 bodypart_height, bodypart_width = bodypart.shape[:2]
@@ -188,7 +198,7 @@ class SDA(transforms.Preprocess):
                                 augmented_image[y + i][x + j] = bodypart[i][j]
                     
                     # TODO should remove this for training
-                    #augmented_image = draw_keypoint(augmented_image, new_keypoints)
+                    #augmented_image = draw_keypoint(augmented_image, keypoints)
                     # save the mask
                     masks.append(mask)
         # update the annotations with the new keypoints from the body parts added
@@ -271,6 +281,7 @@ class SDA(transforms.Preprocess):
         return mask, bin_masks, bodyparts, bodyparts_kp
 
     def crop_dataset(self):
+        #global all_bodypart_dict
         # make output folder and child folders
         os.makedirs(output_folder, exist_ok=True)
         annotations = json.load(open(train_ann))
@@ -323,7 +334,7 @@ class SDA(transforms.Preprocess):
             for sublist in list:
                 output_list.append(sublist)
         print(len(body_pool), len(mask_pool), len(output_list))
-        
+        self.all_bodypart_dict = json.load(open(all_bodypart_file))
 
         for i in range(len(body_pool)):
             output.append({'bodypart':body_pool[i], 'mask':mask_pool[i], 'keypoints':output_list[i]})
@@ -332,8 +343,6 @@ class SDA(transforms.Preprocess):
         file_path = os.path.join(output_folder, 'all_bodyparts_kp'+'.json')
         with open(file_path, 'w') as file:
             json.dump(output, file)
-
-
 
 
         #file_path = os.path.join(output_folder, 'all_bodyparts_kp'+'.json')
@@ -414,5 +423,3 @@ class SDA(transforms.Preprocess):
                 plt.imsave(output_folder+str(i)+'.jpg', crop)
                 i += 1
         return
-    
-

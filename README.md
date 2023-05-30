@@ -31,7 +31,7 @@ python3 -m openpifpaf.train  --lr=0.0003 --momentum=0.95 --clip-grad-value=10.0 
 
 The dataset used is the [Cross-domain Adaptation For Animal Pose Estimation](https://sites.google.com/view/animal-pose/). The [test.py](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/blob/main/test.py) script downloads, unzips, converts the dataset into COCO format and splits the data. Then, the SDA module crops the dataset into bodyparts and finally the training process is launched. 
 ```
-python3 test.py
+python3 train.py
 ```
 
 

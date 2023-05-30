@@ -13,9 +13,27 @@ Therefore, during the cropping phase, we extract the bodyparts and their local k
 
 The main goal of this approach is to enhance the model's robustness to occlusion, even when one animal occludes another. 
 
+
 ## Experimental Setup
 
+The Plugin has been tested on Paperspace.com, training the OpenPifPaf model for 200 epochs, with the following hyperparameters :
+
+- Learning Rate : 0.0003
+- Momentum : 0.95
+- Batch Size : 4 (or 8 depending on the available GPU's on Paperspace)
+- Learning Rate Warm Start at 200 with shufflenetv2k30 checkpoint
+
+```
+python3 -m openpifpaf.train  --lr=0.0003 --momentum=0.95 --clip-grad-value=10.0 --b-scale=10.0 --batch-size=8 --loader-workers=12 --epochs=600 --lr-decay 280 300 --lr-decay-epochs=10 --val-interval 5 --checkpoint=shufflenetv2k30 --lr-warm-up-start-epoch=200 --dataset=custom_animal --animal-square-edge=385 --animal-upsample=2 --animal-bmin=2 --animal-extended-scale --weight-decay=1e-5
+```
+
 ## Dataset Description
+
+The dataset used is the [Cross-domain Adaptation For Animal Pose Estimation](https://sites.google.com/view/animal-pose/). The [test.py](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/blob/main/test.py) script downloads, unzips, converts the dataset into COCO format and splits the data. Then, the SDA module crops the dataset into bodyparts and finally the training process is launched. 
+```
+python3 test.py
+```
+
 
 ## Usage 
 
@@ -30,7 +48,6 @@ $ pip install openpifpaf & pip install pycocotools
 
 
 ## Examples
-
 
 Bodyparts look like this:
 

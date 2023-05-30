@@ -169,7 +169,7 @@ class SDA(transforms.Preprocess):
             # ensure the body part is not too big compared to the image
             if image_height/bodypart_height > IMG_TO_BODYPART_RATION or image_width/bodypart_width > IMG_TO_BODYPART_RATION:
                 # apply a random scale to the body part, between 0.5 and 1 of the Image to body part ratio
-                scale = random.uniform(0.5, 1) * IMG_TO_BODYPART_RATION
+                scale = random.uniform(0.1, 1) * IMG_TO_BODYPART_RATION
                 bodypart = cv2.resize(bodypart, (int(bodypart_width * scale), int(bodypart_height * scale)))
                 mask = cv2.resize(mask, (int(bodypart_width * scale), int(bodypart_height * scale)))
                 bodypart_height, bodypart_width = bodypart.shape[:2]
@@ -188,7 +188,7 @@ class SDA(transforms.Preprocess):
                                 augmented_image[y + i][x + j] = bodypart[i][j]
                     
                     # TODO should remove this for training
-                    #augmented_image = draw_keypoint(augmented_image, keypoints)
+                    #augmented_image = draw_keypoint(augmented_image, new_keypoints)
                     # save the mask
                     masks.append(mask)
         # update the annotations with the new keypoints from the body parts added

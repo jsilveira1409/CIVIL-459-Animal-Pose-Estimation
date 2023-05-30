@@ -2,14 +2,14 @@ import json
 import os
 import matplotlib.pyplot as plt
 
-sda_log_file_path = 'outputs/paperspace/sda/logs/'
+sda_log_file_path = '../outputs/paperspace/sda/logs/'
 sda_log_files = os.listdir(sda_log_file_path)
 sda_log_dictionaries = []
 print("SDA log files: ")
 for file in sda_log_files:
     print(file)
 
-no_sda_log_file_path = 'outputs/paperspace/no_sda/logs/'
+no_sda_log_file_path = '../outputs/paperspace/no_sda/logs/'
 no_sda_log_files = os.listdir(no_sda_log_file_path)
 no_sda_log_dictionaries = []
 
@@ -17,7 +17,7 @@ print("No SDA log files: ")
 for file in no_sda_log_files:
     print(file)
 
-sda_improved_log_file_path = 'outputs/paperspace/sda_improved/logs/'
+sda_improved_log_file_path = '../outputs/paperspace/sda_improved/logs/'
 sda_improved_log_files = os.listdir(sda_improved_log_file_path)
 sda_improved_log_dictionaries = []
 print("SDA log files: ")

@@ -308,17 +308,17 @@ def add_iscrowd():
 from multiprocessing import freeze_support
 
 if __name__ == '__main__':
-    freeze_support()
-    main()
+    #freeze_support()
+    #main()
     sda = SDA()
     img_index = int(sys.argv[1])
     show_all = False
     print(img_index)
-    test_sda(sda,img_index, show_all)
-    kp_dict = json.load(open('data-animalpose/bodyparts/all_bodyparts_kp.json', 'r'))
-    part_indx = int(sys.argv[1])
-    img = plt.imread(kp_dict[part_indx]['bodypart'])
-    img = draw_keypoint(img, kp_dict[part_indx]['keypoints'])
-    plt.imshow(img)
-    plt.show()
+    a(sda,img_index, show_all)
+    #kp_dict = json.load(open('data-animalpose/bodyparts/all_bodyparts_kp.json', 'r'))
+    #part_indx = int(sys.argv[1])
+    #img = plt.imread(kp_dict[part_indx]['bodypart'])
+    #img = draw_keypoint(img, kp_dict[part_indx]['keypoints'])
+    #plt.imshow(img)
+    #plt.show()
 

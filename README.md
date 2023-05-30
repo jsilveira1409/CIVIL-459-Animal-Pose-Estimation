@@ -46,6 +46,23 @@ Depending on the session, OpenPifPaf and PyCocoTools need to be installed :
 $ pip install openpifpaf & pip install pycocotools
 ```
 
+Then by running the [train.py](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/blob/main/test.py) script, we can execute the whole pipeline up until training:
+```
+def main():
+  # 1. Download dataset
+    download_dataset()
+    # 2. Convert to COCO format 
+    adapt_to_coco()
+    # 3. Split data into train and val
+    split_data()
+    # 4. Initialize SDA and crop the dataset, creating a body part pool
+    sda = SDA()
+    sda.crop_dataset()
+    # 5. Configure plugins
+    config = openpifpaf.plugin.register()
+    # 6. Train the model
+    subprocess.run(train_cmd, shell=True)
+```
 
 ## Examples
 

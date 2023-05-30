@@ -13,6 +13,25 @@ Therefore, during the cropping phase, we extract the bodyparts and their local k
 
 The main goal of this approach is to enhance the model's robustness to occlusion, even when one animal occludes another. 
 
+## Experimental Setup
+
+## Dataset Description
+
+## Usage 
+
+The training was conducted on [Paperspace](https://www.paperspace.com/). The Virtual Machine can be access here : 
+ **[Paperspace VM](https://console.paperspace.com/jsilveira1409/notebook/rwp2eb9tnfijzsh)**
+
+Depending on the session, OpenPifPaf and PyCocoTools need to be installed :
+
+```bash
+$ pip install openpifpaf & pip install pycocotools
+```
+
+
+## Examples
+
+
 Bodyparts look like this:
 
 ![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/6b55ae36-0f0b-462b-9031-7a8a8585d67d)
@@ -28,19 +47,6 @@ Which then allows us to extract them with less background than just getting the 
 Some Results are better than others...
 
 ![image](https://github.com/jsilveira1409/CIVIL-459-Animal-Pose-Estimation/assets/57415447/e9c402dc-78f5-4217-b8cd-ec179854b470)
-
-
-## Usage/Examples
-
-The training was conducted on [Paperspace](https://www.paperspace.com/). The Virtual Machine can be access here : 
- **[Paperspace VM](https://console.paperspace.com/jsilveira1409/notebook/rwp2eb9tnfijzsh)**
-
-Depending on the session, OpenPifPaf and PyCocoTools need to be installed :
-
-```bash
-$ pip install openpifpaf & pip install pycocotools
-```
-
 
 
 

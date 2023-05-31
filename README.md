@@ -1,7 +1,7 @@
 # CIVIL-459 OpenPifPaf SDA plugin
 
 ## Contribution Overview
-This repository implements the Semantic Data Augmentation (SDA) technique for Animal 2D Pose Estimation. The SDA plugin is based on the _"Adversarial Semantic Data Augmentation for Human Pose Estimation"_ paper [1].
+This repository implements the Semantic Data Augmentation (SDA) technique for Animal 2D Pose Estimation. The SDA plugin is based on the _"Adversarial Semantic Data Augmentation for Human Pose Estimation"_ paper [1]. Check the [Video](https://youtu.be/aUT1Tqia494) for more explanations.
 
 <img src="intro.gif" width="1000"/>
 

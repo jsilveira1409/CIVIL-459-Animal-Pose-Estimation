@@ -5,7 +5,7 @@ This repository implements the Semantic Data Augmentation (SDA) technique for An
 
 ![](intro.gif)
 
-<img src="intro.gif" width="300"/>
+<img src="intro.gif" width="1000"/>
 
 
 The SDA Plugin works by iterating over the dataset and applying cropping to different body parts using keypoint data. Each body part is masked and extracted individually, although the quality of the cropped body parts may not be perfect. Random rotation and scaling are also applied to the individual body parts. The positioning of the body parts is currently random, but in the future, Adversarial Positioning will be implemented. Adversarial Positioning aims to add leg parts next to the ground truth legs to confuse the model and improve its generalization capabilities. 

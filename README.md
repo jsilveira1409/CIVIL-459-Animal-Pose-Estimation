@@ -3,8 +3,6 @@
 ## Contribution Overview
 This repository implements the Semantic Data Augmentation (SDA) technique for Animal 2D Pose Estimation. The SDA plugin is based on the _"Adversarial Semantic Data Augmentation for Human Pose Estimation"_ paper [1].
 
-![](intro.gif)
-
 <img src="intro.gif" width="1000"/>
 
 
